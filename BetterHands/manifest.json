@@ -1,0 +1,14 @@
+﻿{
+  "guid": "betterhands",
+  "version": "1.0.0",
+  "name": "BetterHands",
+  "authors": [
+    "M'aiq"
+  ],
+  "dependencies": {
+    "deli.core": "0.2.5"
+  },
+  "runtime": {
+    "BetterHands.dll": "assembly"
+  }
+}
