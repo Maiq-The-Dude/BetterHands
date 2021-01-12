@@ -1,5 +1,4 @@
 ﻿using BepInEx.Configuration;
-using BepInEx.Logging;
 using BetterHands.Configs;
 using Deli;
 using FistVR;
@@ -56,7 +55,7 @@ namespace BetterHands
 			// Set the idle sphere to our color
 			var cfg = Configs.Color;
 			var fvrHand = hands[0].GetComponent<FVRViveHand>();
-			fvrHand.TouchSphereMat_NoInteractable.SetColor(COLOR_PROPERTY, Recolor(cfg.InteractSphere));
+			fvrHand.TouchSphereMat_NoInteractable.SetColor(COLOR_PROPERTY, Recolor(cfg.InteractSphere, cfg.Intensity.Value));
 
 			// Resize interaction spheres & colliders
 			var scale = new float[] { Configs.FingerSize.Value, Configs.PalmSize.Value };
@@ -92,6 +91,7 @@ namespace BetterHands
 		private void ColorHandRecursive(GameObject obj)
 		{
 			var cfg = Configs.Color;
+			var intensity = cfg.Intensity.Value;
 			if (null == obj)
 			{
 				return;
@@ -112,11 +112,11 @@ namespace BetterHands
 					// All controller geo have two materials, blue & purple
 					if (mat.name.ToLower().Contains("blue"))
 					{
-						mat.SetColor(COLOR_PROPERTY, Recolor(cfg.HandA));
+						mat.SetColor(COLOR_PROPERTY, Recolor(cfg.HandA, intensity));
 					}
 					else
 					{
-						mat.SetColor(COLOR_PROPERTY, Recolor(cfg.HandB));
+						mat.SetColor(COLOR_PROPERTY, Recolor(cfg.HandB, intensity));
 					}
 				}
 
@@ -219,9 +219,9 @@ namespace BetterHands
 
 		#region Helpers
 		// Format the human readable RGBA to what unity wants
-		private Vector4 Recolor(ConfigEntry<Vector4> cfg)
+		private Vector4 Recolor(ConfigEntry<Vector4> cfg, float intensity)
 		{
-			var color = new Vector4(4 * (cfg.Value[0] / 255), 4 * (cfg.Value[1] / 255), 4 * (cfg.Value[2] / 255), cfg.Value[3] / 1);
+			var color = new Vector4(intensity * (cfg.Value[0] / 255), intensity * (cfg.Value[1] / 255), intensity * (cfg.Value[2] / 255), cfg.Value[3] / 1);
 			return color;
 		}
 
