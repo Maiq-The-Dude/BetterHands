@@ -1,4 +1,5 @@
 ﻿using BepInEx.Configuration;
+using BepInEx.Logging;
 using BetterHands.Configs;
 using Deli;
 using FistVR;
@@ -14,12 +15,12 @@ namespace BetterHands
 		private const string COLOR_PROPERTY = "_RimColor";
 		public RootConfig Configs { get; }
 
-		public float OGRadius;
-		public float OGScale;
+		// Wurstmod 2 compat
+		private float _ogRadius;
+		private float _ogScale;
 
 		private FVRViveHand _leftHand;
 		private FVRViveHand _rightHand;
-
 		private bool _magPalming;
 
 		public Plugin()
@@ -28,7 +29,7 @@ namespace BetterHands
 			_magPalming = Configs.MagPalming.Value;
 			if (_magPalming)
 			{
-				Harmony.CreateAndPatchAll(typeof(Plugin));
+				Harmony.CreateAndPatchAll(typeof(Patches));
 			}
 
 			SceneManager.sceneLoaded += OnSceneLoaded;
@@ -68,14 +69,14 @@ namespace BetterHands
 				for (var i = 0; i < vis.Length; i++)
 				{
 					// Wurstmod2 compat
-					if (OGRadius == 0.0)
+					if (_ogRadius == 0.0)
 					{
-						OGRadius = collider[i].radius;
-						OGScale = vis[i].localScale.x;
+						_ogRadius = collider[i].radius;
+						_ogScale = vis[i].localScale.x;
 					}
-					collider[i].radius = OGRadius * scale[i];
+					collider[i].radius = _ogRadius * scale[i];
 
-					var visScale = OGScale * scale[i];
+					var visScale = _ogScale * scale[i];
 					vis[i].localScale = new Vector3(visScale, visScale, visScale);
 				}
 
@@ -135,7 +136,6 @@ namespace BetterHands
 				pose.parent = hand.GetComponent<FVRViveHand>().PoseOverride;
 				if (hand == GM.CurrentPlayerBody.RightHand)
 				{
-					//pose.localPosition = new Vector3(-0.05f, 0, -0.14f);
 					pose.localPosition = new Vector3(0.035f, 0, 0.035f);
 					pose.localRotation = Quaternion.Euler(90f, 85f, 90f);
 				}
@@ -159,55 +159,6 @@ namespace BetterHands
 			}
 		}
 
-		#region Patches
-		// Let our quickslots load guns
-		[HarmonyPatch(typeof(FVRFireArmReloadTriggerMag), "OnTriggerEnter")]
-		[HarmonyPostfix]
-		private static void PatchMagTrigger(FVRFireArmReloadTriggerMag __instance, Collider collider)
-		{
-			if (__instance.Magazine != null && __instance.Magazine.FireArm == null && collider.gameObject.tag == "FVRFireArmReloadTriggerWell")
-			{
-				if (__instance.Magazine.QuickbeltSlot == GM.CurrentPlayerBody.QuickbeltSlots[GM.CurrentPlayerBody.QuickbeltSlots.Count - 1] || __instance.Magazine.QuickbeltSlot == GM.CurrentPlayerBody.QuickbeltSlots[GM.CurrentPlayerBody.QuickbeltSlots.Count - 2])
-				{
-					FVRFireArmReloadTriggerWell component = collider.gameObject.GetComponent<FVRFireArmReloadTriggerWell>();
-					FireArmMagazineType fireArmMagazineType = component.FireArm.MagazineType;
-					if (component.UsesTypeOverride)
-					{
-						fireArmMagazineType = component.TypeOverride;
-					}
-					if (fireArmMagazineType == __instance.Magazine.MagazineType && (component.FireArm.EjectDelay <= 0f || __instance.Magazine != component.FireArm.LastEjectedMag) && component.FireArm.Magazine == null)
-					{
-						__instance.Magazine.SetQuickBeltSlot(null);
-						__instance.Magazine.Load(component.FireArm);
-
-						// very cool code to set return the hand to visible
-						GetControllerFrom(__instance.Magazine.FireArm.m_hand.OtherHand).SetActive(true);
-
-					}
-				}
-			}
-		}
-
-		// Returns controller geo if slots/hands empty
-		[HarmonyPatch(typeof(FVRViveHand), "CurrentInteractable", MethodType.Setter)]
-		[HarmonyPostfix]
-		private static void CurrentInteractablePatch(FVRViveHand __instance)
-		{
-			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
-			{
-				if (__instance.IsThisTheRightHand && GM.CurrentPlayerBody.QuickbeltSlots[GM.CurrentPlayerBody.QuickbeltSlots.Count - 2].CurObject == null)
-				{
-					GetControllerFrom(__instance).SetActive(true);
-				}
-				else if (GM.CurrentPlayerBody.QuickbeltSlots[GM.CurrentPlayerBody.QuickbeltSlots.Count - 1].CurObject == null)
-				{
-					GetControllerFrom(__instance).SetActive(true);
-				}
-			}
-		}
-
-		#endregion
-
 		#region Input
 		private void Update()
 		{
@@ -229,7 +180,7 @@ namespace BetterHands
 				handSlot = 1;
 			}
 
-			if (input)
+			if (input && !hand.IsInStreamlinedMode)
 			{
 				var qb = GM.CurrentPlayerBody.QuickbeltSlots;
 				var beltSlots = qb.Count;
@@ -275,11 +226,11 @@ namespace BetterHands
 		}
 
 		// Return what geo we are using
-		private static GameObject GetControllerFrom(Transform hand)
+		public static GameObject GetControllerFrom(Transform hand)
 		{
 			return GetControllerFrom(hand.GetComponent<FVRViveHand>());
 		}
-		private static GameObject GetControllerFrom(FVRViveHand hand)
+		public static GameObject GetControllerFrom(FVRViveHand hand)
 		{
 			uint id = hand.Pose[hand.HandSource].trackedDeviceIndex;
 			string model = SteamVR.instance.GetStringProperty(ETrackedDeviceProperty.Prop_ModelNumber_String, id).ToLower();
