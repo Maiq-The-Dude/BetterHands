@@ -112,11 +112,11 @@ namespace BetterHands
 					// All controller geo have two materials, blue & purple
 					if (mat.name.ToLower().Contains("blue"))
 					{
-						mat.SetColor(COLOR_PROPERTY, Recolor(cfg.HandA, intensity));
+						mat.SetColor(COLOR_PROPERTY, Recolor(cfg.MaterialA, intensity));
 					}
 					else
 					{
-						mat.SetColor(COLOR_PROPERTY, Recolor(cfg.HandB, intensity));
+						mat.SetColor(COLOR_PROPERTY, Recolor(cfg.MaterialB, intensity));
 					}
 				}
 
