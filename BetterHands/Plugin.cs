@@ -18,8 +18,8 @@ namespace BetterHands
 		private float _ogRadius;
 		private float _ogScale;
 
-		private FVRViveHand _leftHand;
 		private FVRViveHand _rightHand;
+		private FVRViveHand _leftHand;
 		private bool _magPalming;
 
 		public Plugin()
@@ -38,8 +38,8 @@ namespace BetterHands
 		{
 			ReloadConfig(Config);
 
-			_leftHand = GM.CurrentPlayerBody.LeftHand.GetComponent<FVRViveHand>();
 			_rightHand = GM.CurrentPlayerBody.RightHand.GetComponent<FVRViveHand>();
+			_leftHand = GM.CurrentPlayerBody.LeftHand.GetComponent<FVRViveHand>();
 
 			CustomizeHands();
 		}
@@ -48,23 +48,26 @@ namespace BetterHands
 		{
 			var hands = new Transform[]
 			{
-				GM.CurrentPlayerBody.RightHand,
-				GM.CurrentPlayerBody.LeftHand
+				_rightHand.transform,
+				_leftHand.transform
 			};
 
 			// Set the idle sphere to our color
 			var cfg = Configs.Color;
-			var fvrHand = hands[0].GetComponent<FVRViveHand>();
-			fvrHand.TouchSphereMat_NoInteractable.SetColor(COLOR_PROPERTY, Recolor(cfg.InteractSphere, cfg.Intensity.Value));
+			hands[0].GetComponent<FVRViveHand>().TouchSphereMat_NoInteractable.SetColor(COLOR_PROPERTY, Recolor(cfg.InteractSphere, cfg.Intensity.Value));
 
-			// Resize interaction spheres & colliders
-			var scale = new float[] { Configs.FingerSize.Value, Configs.PalmSize.Value };
-			Transform[] vis = null;
-			SphereCollider[] collider;
+			// Loop through the hands
 			foreach (Transform hand in hands)
 			{
-				collider = hand.GetComponents<SphereCollider>();
-				vis = new Transform[] { hand.Find("ControllerModel/_TouchIndication_Fingers"), hand.Find("ControllerModel/_TouchIndication_Palm") };
+				// Resize interaction spheres & colliders
+				var scale = new float[] { Configs.FingerSize.Value, Configs.PalmSize.Value };
+				SphereCollider[] collider = hand.GetComponents<SphereCollider>();
+				var fvrhand = hand.GetComponent<FVRViveHand>();
+				Transform[] vis = new Transform[] 
+				{
+					fvrhand.TouchSphere.transform,
+					fvrhand.TouchSphere_Palm.transform 
+				};
 				for (var i = 0; i < vis.Length; i++)
 				{
 					// Wurstmod2 compat
@@ -127,6 +130,7 @@ namespace BetterHands
 		// Adds quickslot for palming magazines
 		private void ConfigMagPalming(Transform hand)
 		{
+			// Backpack is a part of all quickbelt layouts, use that to create our slots
 			var slot = GM.CurrentPlayerBody.Torso.Find("QuickBeltSlot_Backpack");
 			var qb = GM.CurrentPlayerBody.QuickbeltSlots;
 
@@ -134,13 +138,15 @@ namespace BetterHands
 			{
 				var pose = new GameObject().transform;
 				pose.parent = hand.GetComponent<FVRViveHand>().PoseOverride;
-				if (hand == GM.CurrentPlayerBody.RightHand)
+				if (hand == _rightHand.transform)
 				{
+					// Right hand magic numbers for positioning
 					pose.localPosition = new Vector3(0.035f, 0, 0.035f);
 					pose.localRotation = Quaternion.Euler(90f, 85f, 90f);
 				}
 				else
 				{
+					// Left hand magic numbers for positioning
 					pose.localPosition = new Vector3(-0.035f, 0, 0.035f);
 					pose.localRotation = Quaternion.Euler(90f, 95f, 90f);
 				}
@@ -154,8 +160,8 @@ namespace BetterHands
 				geo.GetChild(1).gameObject.SetActive(false);
 
 				var newSlotQB = newSlot.GetComponent<FVRQuickBeltSlot>();
+				newSlotQB.IsSelectable = false;
 				qb.Add(newSlotQB);
-				qb[qb.Count - 1].IsSelectable = false;
 			}
 		}
 
@@ -185,6 +191,8 @@ namespace BetterHands
 				var qb = GM.CurrentPlayerBody.QuickbeltSlots;
 				var beltSlots = qb.Count;
 				var obj = qb[beltSlots - handSlot].CurObject;
+
+				// If current hand is empty, retrieve the object
 				if (hand.m_state == FVRViveHand.HandState.Empty)
 				{
 					if (obj != null)
@@ -192,6 +200,8 @@ namespace BetterHands
 						hand.RetrieveObject(obj);
 					}
 				}
+
+				// else if it is holding a small magazine, swap the current hand and hand slot items
 				else if (hand.CurrentInteractable is FVRFireArmMagazine mag)
 				{
 					if (mag.Size == FVRPhysicalObject.FVRPhysicalObjectSize.Small)

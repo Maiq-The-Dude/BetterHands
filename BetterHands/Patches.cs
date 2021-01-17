@@ -6,6 +6,7 @@ namespace BetterHands
 {
 	internal class Patches
 	{
+		// Allow mags from our hand slots to load into firearms
 		[HarmonyPatch(typeof(FVRFireArmReloadTriggerMag), nameof(FVRFireArmReloadTriggerMag.OnTriggerEnter))]
 		[HarmonyPostfix]
 		private static void PatchMagTrigger(FVRFireArmReloadTriggerMag __instance, Collider collider)
@@ -35,7 +36,7 @@ namespace BetterHands
 			}
 		}
 
-		// Returns controller geo if slots/hands empty
+		// Makes controller geo visible if slots & hands empty
 		[HarmonyPatch(typeof(FVRViveHand), "CurrentInteractable", MethodType.Setter)]
 		[HarmonyPostfix]
 		private static void CurrentInteractablePatch(FVRViveHand __instance)
@@ -43,18 +44,14 @@ namespace BetterHands
 			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
 			{
 				var qbSlots = GM.CurrentPlayerBody.QuickbeltSlots;
-				if (__instance.IsThisTheRightHand && qbSlots[qbSlots.Count - 2].CurObject == null)
-				{
-					Plugin.GetControllerFrom(__instance).SetActive(true);
-				}
-				else if (qbSlots[qbSlots.Count - 1].CurObject == null)
+				if ((__instance.IsThisTheRightHand && qbSlots[qbSlots.Count - 2].CurObject == null) || (qbSlots[qbSlots.Count - 1].CurObject == null))
 				{
 					Plugin.GetControllerFrom(__instance).SetActive(true);
 				}
 			}
 		}
 
-		// Allow hand slots to hit physical mag releases
+		// Allow mags in hand slots to hit physical mag releases
 		[HarmonyPatch(typeof(PhysicalMagazineReleaseLatch), nameof(PhysicalMagazineReleaseLatch.OnCollisionEnter))]
 		[HarmonyPostfix]
 		private static void PhysicalMagReleasePatch(PhysicalMagazineReleaseLatch __instance, Collision col)
