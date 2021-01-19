@@ -5,7 +5,7 @@ namespace BetterHands.Configs
 	public class RootConfig
 	{
 		public ColorConfig Color { get; }
-		public ConfigEntry<bool> MagPalming { get; }
+		public MagPalmConfig MagPalm { get; }
 		public ConfigEntry<float> FingerSize { get; }
 		public ConfigEntry<float> PalmSize { get; }
 
@@ -15,7 +15,8 @@ namespace BetterHands.Configs
 
 			FingerSize = config.Bind("Interaction Sizes", nameof(FingerSize), 1f, "Scale of the finger interaction sphere");
 			PalmSize = config.Bind("Interaction Sizes", nameof(PalmSize), 1f, "Scale of the palm interaction sphere");
-			MagPalming = config.Bind("Magazine Palming", nameof(MagPalming), true, "Allow holding two magazines via palming");
+
+			MagPalm = new MagPalmConfig(config, nameof(MagPalm));
 		}
 	}
 }
