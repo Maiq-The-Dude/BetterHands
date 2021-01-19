@@ -14,13 +14,10 @@
   
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\Libs\Assembly-CSharp_publicized.dll</HintPath>
+      <HintPath>..\libs\Assembly-CSharp_publicized.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>..\..\Libs\Assembly-CSharp-firstpass.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine">
-      <HintPath>..\..\Libs\UnityEngine.dll</HintPath>
+      <HintPath>..\libs\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
   </ItemGroup>
 
