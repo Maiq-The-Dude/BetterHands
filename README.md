@@ -23,3 +23,9 @@ Configs can be edited mid-game, but will require a scene reload to take effect.
   - Touchpad directional taps
   - Touchpad directional clicks
   - Trigger (default)
+
+## Installation
+Place `betterhands.deli` into `h3vr/mods` folder.
+
+## Uninstallation
+Delete `betterhands.deli` in the `h3vr/mods` folder and `betterhands.cfg` in the `h3vr/mods/configs` folder.
