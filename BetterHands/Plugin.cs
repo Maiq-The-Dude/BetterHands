@@ -143,41 +143,20 @@ namespace BetterHands
 			{
 				var pose = new GameObject().transform;
 				pose.parent = hand.GetComponent<FVRViveHand>().PoseOverride;
-
-				// Magic pos & rot numbers
-				// Right Outside, Left Inside
-				var PosROLI = new Vector3(0.035f, 0, 0.035f);
-				var RotROLI = Quaternion.Euler(90f, 85f, 90f);
-				// Right Inside, Left Outside 
-				var PosRILO = Vector3.Scale(PosROLI, new Vector3(-1, 1, 1));
-				var RotRILO = Quaternion.Euler(90f, 95f, 90f);
-
+			
 				if (hand == _rightHand.transform)
 				{
-					if (cfg.Position.Value == MagPalmConfig.Positions.Outside)
-					{
-						pose.localPosition = PosROLI;
-						pose.localRotation = RotROLI;
-					}
-					else
-					{
-						pose.localPosition = PosRILO;
-						pose.localRotation = RotRILO;
-					}
+
+					pose.localPosition = cfg.Position.Value;
+					pose.localRotation = Quaternion.Euler(cfg.Rotation.Value);
 				}
 				else
 				{
-					if (cfg.Position.Value == MagPalmConfig.Positions.Outside)
-					{
-						pose.localPosition = PosRILO;
-						pose.localRotation = RotRILO;
-					}
-					else
-					{
-						pose.localPosition = PosROLI;
-						pose.localRotation = RotROLI;
-					}
-
+					// mirror configs for left hand
+					var rot = cfg.Rotation.Value;
+					var tilt = 90 - (rot.y - 90);
+					pose.localPosition = Vector3.Scale(cfg.Position.Value, new Vector3(-1, 1, 1));
+					pose.localRotation = Quaternion.Euler(rot.x, tilt, rot.z);
 				}
 
 				// Create & config our copy
@@ -210,9 +189,11 @@ namespace BetterHands
 		private void PollInput(FVRViveHand hand)
 		{
 			// Get input from hand & config
-			var cfg = hand.IsThisTheRightHand ? Configs.MagPalm.RightKeybind : Configs.MagPalm.LeftKeybind;
-			var value = cfg.Value;
+			var cfg = Configs.MagPalm;
+			var inputCfg = hand.IsThisTheRightHand ? cfg.RightKeybind : cfg.LeftKeybind;
+			var value = inputCfg.Value;
 			var handInput = hand.Input;
+			var magnitude = handInput.TouchpadAxes.magnitude > cfg.ClickPressure.Value;
 			var input = value switch
 			{
 				MagPalmConfig.Keybind.AXButton => handInput.AXButtonDown,
@@ -222,10 +203,14 @@ namespace BetterHands
 				MagPalmConfig.Keybind.Secondary2AxisSouth => handInput.Secondary2AxisSouthDown,
 				MagPalmConfig.Keybind.Secondary2AxisEast => handInput.Secondary2AxisEastDown,
 				MagPalmConfig.Keybind.Secondary2AxisWest => handInput.Secondary2AxisWestDown,
-				MagPalmConfig.Keybind.TouchpadNorth => handInput.TouchpadNorthDown,
-				MagPalmConfig.Keybind.TouchpadSouth => handInput.TouchpadSouthDown,
-				MagPalmConfig.Keybind.TouchpadEast => handInput.TouchpadEastDown,
-				MagPalmConfig.Keybind.TouchpadWest => handInput.TouchpadWestDown,
+				MagPalmConfig.Keybind.TouchpadClickNorth => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.up) <= 45f,
+				MagPalmConfig.Keybind.TouchpadClickSouth => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.down) <= 45f,
+				MagPalmConfig.Keybind.TouchpadClickEast => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.right) <= 45f,
+				MagPalmConfig.Keybind.TouchpadClickWest => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.left) <= 45f,
+				MagPalmConfig.Keybind.TouchpadTapNorth => handInput.TouchpadNorthDown,
+				MagPalmConfig.Keybind.TouchpadTapSouth => handInput.TouchpadSouthDown,
+				MagPalmConfig.Keybind.TouchpadTapEast => handInput.TouchpadEastDown,
+				MagPalmConfig.Keybind.TouchpadTapWest => handInput.TouchpadWestDown,
 				MagPalmConfig.Keybind.Trigger => handInput.TriggerDown,
 				_ => false,
 			};
