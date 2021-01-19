@@ -143,7 +143,7 @@ namespace BetterHands
 			{
 				var pose = new GameObject().transform;
 				pose.parent = hand.GetComponent<FVRViveHand>().PoseOverride;
-			
+
 				if (hand == _rightHand.transform)
 				{
 
