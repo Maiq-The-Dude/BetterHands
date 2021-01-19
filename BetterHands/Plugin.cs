@@ -143,32 +143,39 @@ namespace BetterHands
 			{
 				var pose = new GameObject().transform;
 				pose.parent = hand.GetComponent<FVRViveHand>().PoseOverride;
-				// Right hand magic numbers for positioning
+
+				// Magic pos & rot numbers
+				// Right Outside, Left Inside
+				var PosROLI = new Vector3(0.035f, 0, 0.035f);
+				var RotROLI = Quaternion.Euler(90f, 85f, 90f);
+				// Right Inside, Left Outside 
+				var PosRILO = Vector3.Scale(PosROLI, new Vector3(-1, 1, 1));
+				var RotRILO = Quaternion.Euler(90f, 95f, 90f);
+
 				if (hand == _rightHand.transform)
 				{
 					if (cfg.Position.Value == MagPalmConfig.Positions.Outside)
 					{
-						pose.localPosition = new Vector3(0.035f, 0, 0.035f);
-						pose.localRotation = Quaternion.Euler(90f, 85f, 90f);
+						pose.localPosition = PosROLI;
+						pose.localRotation = RotROLI;
 					}
 					else
 					{
-						pose.localPosition = new Vector3(-0.035f, 0, 0.035f);
-						pose.localRotation = Quaternion.Euler(90f, 95f, 90f);
+						pose.localPosition = PosRILO;
+						pose.localRotation = RotRILO;
 					}
 				}
-				// Left hand magic numbers for positioning
 				else
 				{
 					if (cfg.Position.Value == MagPalmConfig.Positions.Outside)
 					{
-						pose.localPosition = new Vector3(-0.035f, 0, 0.035f);
-						pose.localRotation = Quaternion.Euler(90f, 95f, 90f);
+						pose.localPosition = PosRILO;
+						pose.localRotation = RotRILO;
 					}
 					else
 					{
-						pose.localPosition = new Vector3(0.035f, 0, 0.035f);
-						pose.localRotation = Quaternion.Euler(90f, 85f, 90f);
+						pose.localPosition = PosROLI;
+						pose.localRotation = RotROLI;
 					}
 
 				}
@@ -223,7 +230,7 @@ namespace BetterHands
 				_ => false,
 			};
 
-			if (input)
+			if (input && GrabbityProtection(hand, value))
 			{
 				MagPalmInput(hand, input);
 			}
@@ -277,6 +284,23 @@ namespace BetterHands
 		#endregion
 
 		#region Helpers
+
+		// If mag palm keybind matches grabbity keybind, suppress mag palm input if grabbity sphere is on an item
+		private bool GrabbityProtection(FVRViveHand hand, MagPalmConfig.Keybind keybind)
+		{
+			if (Configs.MagPalm.GrabbityProtection.Value)
+			{
+				var grabbityState = GM.Options.ControlOptions.WIPGrabbityButtonState;
+				if (grabbityState == ControlOptions.WIPGrabbityButton.Trigger && (keybind == MagPalmConfig.Keybind.Trigger)
+					|| grabbityState == ControlOptions.WIPGrabbityButton.Grab && (keybind == MagPalmConfig.Keybind.Grip))
+				{
+					return !hand.Grabbity_HoverSphere.gameObject.activeSelf;
+				}
+			}
+
+			return true;
+		}
+
 		// Format the human readable RGBA to what unity wants
 		private Vector4 Recolor(ConfigEntry<Vector4> cfg, float intensity)
 		{
