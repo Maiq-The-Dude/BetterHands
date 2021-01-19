@@ -310,6 +310,10 @@ namespace BetterHands
 			{
 				return hand.Display_Controller_Touch;
 			}
+			else if (model.Contains("hpmotion"))
+			{
+				return hand.Display_Controller_HPR2;
+			}
 			else if (model.Contains("miramar"))
 			{
 				return hand.Display_Controller_Quest2;
