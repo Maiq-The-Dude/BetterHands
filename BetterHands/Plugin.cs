@@ -1,187 +1,57 @@
-﻿using BepInEx.Configuration;
-using BetterHands.Configs;
+﻿using BetterHands.Configs;
+using BetterHands.Patches;
 using Deli;
 using FistVR;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Valve.VR;
 
 namespace BetterHands
 {
 	public class Plugin : DeliBehaviour
 	{
-		private const string HARMONY_GUID_CHEAT = "betterhands.h3vr.cheats";
-		private const string COLOR_PROPERTY = "_RimColor";
+		public string GUID => Info.Guid;
+		public readonly string HARMONY_GUID_HANDS;
+		public readonly string HARMONY_GUID_MAGPALM;
+		public readonly string HARMONY_GUID_CHEAT;
+
+		public static Plugin Instance { get; private set; }
 
 		public RootConfig Configs { get; }
 
-		// Harmony patcher
+		// Harmony patchers
+		private Harmony _harmonyHands;
+		private Harmony _harmonyMagPalm;
 		private Harmony _harmonyCheat;
 
-		// Wurstmod 2 compat
-		private float _ogRadius;
-		private float _ogScale;
-
-		private FVRViveHand _rightHand;
-		private FVRViveHand _leftHand;
 		private bool _magPalming;
 		private bool _quickbeltsEnabled;
+		private FVRViveHand _rightHand;
+		private FVRViveHand _leftHand;
 
 		public Plugin()
 		{
+			HARMONY_GUID_HANDS = GUID + ".hands";
+			HARMONY_GUID_MAGPALM = GUID + ".magpalm";
+			HARMONY_GUID_CHEAT = GUID + ".cheats";
+
+			Instance = this;
+
 			Configs = new RootConfig(Config);
-
-			// Only patch if mag palming is enabled
-			_magPalming = Configs.MagPalm.Enable.Value;
-			if (_magPalming)
-			{
-				Harmony.CreateAndPatchAll(typeof(Patches));
-			}
-
-			_harmonyCheat = new Harmony(HARMONY_GUID_CHEAT);
+			PatchInit(Configs);
 
 			SceneManager.sceneLoaded += OnSceneLoaded;
 		}
 
 		private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
 		{
-			ReloadConfig(Config);
+			Config.Reload();
 
+			_magPalming = Configs.MagPalm.Enable.Value;
 			_quickbeltsEnabled = GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled;
 
 			_rightHand = GM.CurrentPlayerBody.RightHand.GetComponent<FVRViveHand>();
 			_leftHand = GM.CurrentPlayerBody.LeftHand.GetComponent<FVRViveHand>();
-
-			CustomizeHands();
-		}
-
-		private void CustomizeHands()
-		{
-			var hands = new Transform[]
-			{
-				_rightHand.transform,
-				_leftHand.transform
-			};
-
-			// Set the idle sphere to our color
-			var cfg = Configs.Color;
-			hands[0].GetComponent<FVRViveHand>().TouchSphereMat_NoInteractable.SetColor(COLOR_PROPERTY, Recolor(cfg.InteractSphere, cfg.Intensity.Value));
-
-			// Loop through the hands
-			foreach (Transform hand in hands)
-			{
-				// Resize interaction spheres & colliders
-				var scale = new float[] { Configs.FingerSize.Value, Configs.PalmSize.Value };
-				SphereCollider[] collider = hand.GetComponents<SphereCollider>();
-				var fvrhand = hand.GetComponent<FVRViveHand>();
-				Transform[] vis = new Transform[]
-				{
-					fvrhand.TouchSphere.transform,
-					fvrhand.TouchSphere_Palm.transform
-				};
-				for (var i = 0; i < vis.Length; i++)
-				{
-					// Wurstmod2 compat
-					if (_ogRadius == 0.0)
-					{
-						_ogRadius = collider[i].radius;
-						_ogScale = vis[i].localScale.x;
-					}
-					collider[i].radius = _ogRadius * scale[i];
-
-					var visScale = _ogScale * scale[i];
-					vis[i].localScale = new Vector3(visScale, visScale, visScale);
-				}
-
-				ColorHandRecursive(GetControllerFrom(hand));
-				if (_magPalming)
-				{
-					ConfigMagPalming(hand);
-				}
-			}
-		}
-
-		// Color the hands various geo children
-		private void ColorHandRecursive(GameObject obj)
-		{
-			var cfg = Configs.Color;
-			var intensity = cfg.Intensity.Value;
-			if (null == obj)
-			{
-				return;
-			}
-
-			foreach (Transform child in obj.transform)
-			{
-				if (null == child)
-				{
-					continue;
-				}
-
-				var rend = child.GetComponent<Renderer>();
-				if (rend != null)
-				{
-					var mat = rend.material;
-
-					// All controller geo have two materials, blue & purple
-					if (mat.name.ToLower().Contains("blue"))
-					{
-						mat.SetColor(COLOR_PROPERTY, Recolor(cfg.MaterialA, intensity));
-					}
-					else
-					{
-						mat.SetColor(COLOR_PROPERTY, Recolor(cfg.MaterialB, intensity));
-					}
-				}
-
-				ColorHandRecursive(child.gameObject);
-			}
-		}
-
-		// Adds quickslot for palming magazines
-		private void ConfigMagPalming(Transform hand)
-		{
-			var cfg = Configs.MagPalm;
-
-			// Backpack is a part of all quickbelt layouts, use that to create our slots
-			var slot = GM.CurrentPlayerBody.Torso.Find("QuickBeltSlot_Backpack");
-			var qb = GM.CurrentPlayerBody.QuickbeltSlots;
-
-			if (slot != null)
-			{
-				var pose = new GameObject().transform;
-				pose.parent = hand.GetComponent<FVRViveHand>().PoseOverride;
-
-				if (hand == _rightHand.transform)
-				{
-
-					pose.localPosition = cfg.Position.Value;
-					pose.localRotation = Quaternion.Euler(cfg.Rotation.Value);
-				}
-				else
-				{
-					// mirror configs for left hand
-					var rot = cfg.Rotation.Value;
-					var tilt = 90 - (rot.y - 90);
-					pose.localPosition = Vector3.Scale(cfg.Position.Value, new Vector3(-1, 1, 1));
-					pose.localRotation = Quaternion.Euler(rot.x, tilt, rot.z);
-				}
-
-				// Create & config our copy
-				var newSlot = GameObject.Instantiate(slot, pose);
-				newSlot.localPosition = Vector3.zero;
-				var geo = newSlot.Find("QB_TransformTarget");
-				geo.GetChild(0).gameObject.SetActive(false);
-				geo.GetChild(1).gameObject.SetActive(false);
-
-				var newSlotQB = newSlot.GetComponent<FVRQuickBeltSlot>();
-				newSlotQB.Type = FVRQuickBeltSlot.QuickbeltSlotType.Standard;
-				newSlotQB.IsSelectable = false;
-				newSlotQB.name = hand.name;
-
-				qb.Add(newSlotQB);
-			}
 		}
 
 		#region Input
@@ -273,6 +143,67 @@ namespace BetterHands
 		}
 		#endregion
 
+		#region PatchInit
+
+		// Subscribes to config change events & inits harmony patches 
+		private void PatchInit(RootConfig config)
+		{
+			Configs.MagPalm.Enable.SettingChanged += MagPalmEnable_SettingChanged;
+			Configs.MagPalm.Enable.SettingChanged += Cheat_SettingChanged;
+			Configs.zCheat.CursedPalm.SettingChanged += Cheat_SettingChanged;
+			Configs.zCheat.SizeLimit.SettingChanged += Cheat_SettingChanged;
+
+			_harmonyHands = new Harmony(HARMONY_GUID_HANDS);
+			_harmonyHands.PatchAll(typeof(HandCustomizationPatches));
+
+			_harmonyMagPalm = new Harmony(HARMONY_GUID_MAGPALM);
+			PatchIfMagPalm();
+
+			_harmonyCheat = new Harmony(HARMONY_GUID_CHEAT);
+			PatchIfCheatsExist();
+		}
+
+		private void MagPalmEnable_SettingChanged(object sender, System.EventArgs e)
+		{
+			PatchIfMagPalm();
+		}
+
+		private void Cheat_SettingChanged(object sender, System.EventArgs e)
+		{
+			PatchIfCheatsExist();
+		}
+
+		private void PatchIfMagPalm()
+		{
+			if (Configs.MagPalm.Enable.Value)
+			{
+				Logger.LogDebug("Mag palming enabled");
+				_harmonyMagPalm.PatchAll(typeof(MagPalmPatches));
+			}
+			else
+			{
+				Logger.LogDebug("Mag palming disabled");
+				_harmonyMagPalm.UnpatchSelf();
+			}
+		}
+
+		private void PatchIfCheatsExist()
+		{
+			// Only patch on state change
+			var cfg = Configs.zCheat;
+			if (Configs.MagPalm.Enable.Value && (cfg.CursedPalm.Value || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium))
+			{
+				Logger.LogDebug("TNH score submission disabled");
+				_harmonyCheat.PatchAll(typeof(ScorePatches));
+			}
+			else if (Harmony.HasAnyPatches(HARMONY_GUID_CHEAT))
+			{
+				Logger.LogDebug("TNH score submission enabled");
+				_harmonyCheat.UnpatchSelf();
+			}
+		}
+		#endregion
+
 		#region Helpers
 
 		// If mag palm keybind matches grabbity keybind, suppress mag palm input if grabbity sphere is on an item
@@ -303,76 +234,30 @@ namespace BetterHands
 			return false;
 		}
 
-		// Format the human readable RGBA to what unity wants
-		private Vector4 Recolor(ConfigEntry<Vector4> cfg, float intensity)
-		{
-			var color = new Vector4(intensity * (cfg.Value[0] / 255), intensity * (cfg.Value[1] / 255), intensity * (cfg.Value[2] / 255), cfg.Value[3] / 1);
-			return color;
-		}
-
 		// Return the gameobject geo we are using
-		public static GameObject GetControllerFrom(Transform hand)
-		{
-			return GetControllerFrom(hand.GetComponent<FVRViveHand>());
-		}
 		public static GameObject GetControllerFrom(FVRViveHand hand)
 		{
-			var id = hand.Pose[hand.HandSource].trackedDeviceIndex;
-			var model = SteamVR.instance.GetStringProperty(ETrackedDeviceProperty.Prop_ModelNumber_String, id).ToLower();
-			if (model.Contains("cosmos"))
+			var controllerGeos = new GameObject[]
 			{
-				return hand.Display_Controller_Cosmos;
-			}
-			else if (model.Contains("cv1") || model.Contains("oculus"))
-			{
-				return hand.Display_Controller_Touch;
-			}
-			else if (model.Contains("hpmotion"))
-			{
-				return hand.Display_Controller_HPR2;
-			}
-			else if (model.Contains("miramar"))
-			{
-				return hand.Display_Controller_Quest2;
-			}
-			else if (model.Contains("rift s") || model.Contains("quest"))
-			{
-				return hand.Display_Controller_RiftS;
-			}
-			else if (model.Contains("index") || model.Contains("utah") || model.Contains("knuckles"))
-			{
-				return hand.Display_Controller_Index;
-			}
-			else if (model.Contains("vive") || model.Contains("nolo"))
-			{
-				return hand.Display_Controller_Vive;
-			}
-			else
-			{
-				return hand.Display_Controller_WMR;
-			}
-		}
+				hand.Display_Controller_Cosmos,
+				hand.Display_Controller_HPR2,
+				hand.Display_Controller_Index,
+				hand.Display_Controller_Quest2,
+				hand.Display_Controller_RiftS,
+				hand.Display_Controller_Touch,
+				hand.Display_Controller_Vive,
+				hand.Display_Controller_WMR
+			};
 
-		// Reload config & patch/unpatch tnh score submission
-		private void ReloadConfig(ConfigFile config)
-		{
-			config.Reload();
-
-			// Only patch on state change
-			var cfg = Configs.zCheat;
-			if (cfg.CursedPalm.Value || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium)
+			foreach (var geo in controllerGeos)
 			{
-				if (!Harmony.HasAnyPatches(HARMONY_GUID_CHEAT))
+				if (geo.activeSelf)
 				{
-					Logger.LogDebug("TNH score submission disabled");
-					_harmonyCheat.PatchAll(typeof(ScorePatch));
+					return geo;
 				}
 			}
-			else if (Harmony.HasAnyPatches(HARMONY_GUID_CHEAT))
-			{
-				Logger.LogDebug("TNH score submission reenabled");
-				_harmonyCheat.UnpatchSelf();
-			}
+
+			return hand.Display_Controller;
 		}
 		#endregion
 	}
