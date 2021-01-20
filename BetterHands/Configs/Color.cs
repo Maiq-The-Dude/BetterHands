@@ -9,6 +9,7 @@ namespace BetterHands.Configs
 		public ConfigEntry<Vector4> MaterialB { get; }
 		public ConfigEntry<Vector4> InteractSphere { get; }
 		public ConfigEntry<float> Intensity { get; }
+
 		public ColorConfig(ConfigFile config, string section)
 		{
 			var i = new Vector4(81, 140, 255, 1);

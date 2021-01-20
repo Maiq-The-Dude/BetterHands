@@ -24,6 +24,7 @@ namespace BetterHands.Configs
 			TouchpadTapWest,
 			Trigger
 		}
+
 		public ConfigEntry<bool> Enable { get; }
 		public ConfigEntry<float> ClickPressure { get; }
 		public ConfigEntry<bool> GrabbityProtection { get; }
@@ -31,6 +32,7 @@ namespace BetterHands.Configs
 		public ConfigEntry<Keybind> RightKeybind { get; }
 		public ConfigEntry<Vector3> Position { get; }
 		public ConfigEntry<Vector3> Rotation { get; }
+
 		public MagPalmConfig(ConfigFile config, string section)
 		{
 			Enable = config.Bind(section + ".Enable", nameof(Enable), true, "Allow holding two magazines via palming");

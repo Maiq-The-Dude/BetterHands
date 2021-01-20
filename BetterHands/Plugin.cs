@@ -3,6 +3,7 @@ using BetterHands.Configs;
 using Deli;
 using FistVR;
 using HarmonyLib;
+using RUST.Steamworks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Valve.VR;
@@ -11,8 +12,13 @@ namespace BetterHands
 {
 	public class Plugin : DeliBehaviour
 	{
+		private const string HARMONY_GUID_CHEAT = "betterhands.h3vr.cheats";
 		private const string COLOR_PROPERTY = "_RimColor";
+
 		public RootConfig Configs { get; }
+
+		// Harmony patcher
+		private Harmony _harmonyCheat;
 
 		// Wurstmod 2 compat
 		private float _ogRadius;
@@ -26,11 +32,15 @@ namespace BetterHands
 		public Plugin()
 		{
 			Configs = new RootConfig(Config);
+
+			// Only patch if mag palming is enabled
 			_magPalming = Configs.MagPalm.Enable.Value;
 			if (_magPalming)
 			{
 				Harmony.CreateAndPatchAll(typeof(Patches));
 			}
+
+			_harmonyCheat = new Harmony(HARMONY_GUID_CHEAT);
 
 			SceneManager.sceneLoaded += OnSceneLoaded;
 		}
@@ -168,7 +178,6 @@ namespace BetterHands
 
 				var newSlotQB = newSlot.GetComponent<FVRQuickBeltSlot>();
 				newSlotQB.Type = FVRQuickBeltSlot.QuickbeltSlotType.Standard;
-				newSlotQB.SizeLimit = FVRPhysicalObject.FVRPhysicalObjectSize.Small;
 				newSlotQB.IsSelectable = false;
 				newSlotQB.name = hand.name;
 
@@ -190,8 +199,7 @@ namespace BetterHands
 		{
 			// Get input from hand & config
 			var cfg = Configs.MagPalm;
-			var inputCfg = hand.IsThisTheRightHand ? cfg.RightKeybind : cfg.LeftKeybind;
-			var value = inputCfg.Value;
+			var value = hand.IsThisTheRightHand ? cfg.RightKeybind.Value : cfg.LeftKeybind.Value;
 			var handInput = hand.Input;
 			var magnitude = handInput.TouchpadAxes.magnitude > cfg.ClickPressure.Value;
 			var input = value switch
@@ -227,7 +235,7 @@ namespace BetterHands
 			var qb = GM.CurrentPlayerBody.QuickbeltSlots;
 			for (var i = 0; i < qb.Count; i++)
 			{
-				if ((hand == _rightHand && qb[i].name == _rightHand.name) || (hand == _leftHand && qb[i].name == _leftHand.name))
+				if (qb[i].name == hand.name)
 				{
 					var obj = qb[i].CurObject;
 
@@ -240,26 +248,24 @@ namespace BetterHands
 						}
 					}
 
-					// else if it is holding a small magazine, swap the current hand and hand slot items
-					else if (hand.CurrentInteractable is FVRFireArmMagazine mag)
+					// else if it is holding something, swap the current hand and hand slot items
+					else if (AllowPalming(hand.CurrentInteractable))
 					{
-						if (mag.Size == FVRPhysicalObject.FVRPhysicalObjectSize.Small)
+						var item = hand.CurrentInteractable;
+						item.ForceBreakInteraction();
+						item.SetAllCollidersToLayer(false, "NoCol");
+
+						if (obj != null)
 						{
-							mag.ForceBreakInteraction();
-							mag.SetAllCollidersToLayer(false, "NoCol");
+							item.transform.position = obj.transform.position;
+							hand.RetrieveObject(obj);
+						}
 
-							if (obj != null)
-							{
-								mag.transform.position = obj.transform.position;
-								hand.RetrieveObject(obj);
-							}
-
-							mag.GetComponent<FVRPhysicalObject>().SetQuickBeltSlot(qb[i]);
-							mag.SetAllCollidersToLayer(false, "Default");
-							if (GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
-							{
-								GetControllerFrom(hand).SetActive(false);
-							}
+						item.GetComponent<FVRPhysicalObject>().SetQuickBeltSlot(qb[i]);
+						item.SetAllCollidersToLayer(false, "Default");
+						if (GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
+						{
+							GetControllerFrom(hand).SetActive(false);
 						}
 					}
 					break;
@@ -284,6 +290,18 @@ namespace BetterHands
 			}
 
 			return true;
+		}
+
+		// Returns true if the held object is valid for palming
+		private bool AllowPalming(FVRInteractiveObject item)
+		{
+			var cfg = Configs.zCheat;
+			if (item is FVRFireArmMagazine mag && mag.Size <= cfg.SizeLimit.Value || cfg.CursedPalm.Value)
+			{
+				return true;
+			}
+
+			return false;
 		}
 
 		// Format the human readable RGBA to what unity wants
@@ -336,9 +354,28 @@ namespace BetterHands
 			}
 		}
 
-		private static void ReloadConfig(ConfigFile config)
+		// Reload config & patch/unpatch tnh score submission
+		private void ReloadConfig(ConfigFile config)
 		{
 			config.Reload();
+
+			// Only patch on state change
+			var cfg = Configs.zCheat;
+			if (cfg.CursedPalm.Value || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium)
+			{
+				if (!Harmony.HasAnyPatches(HARMONY_GUID_CHEAT))
+				{
+					Logger.LogDebug("TNH score submission disabled");
+					var original = typeof(HighScoreManager).GetMethod(nameof(HighScoreManager.UpdateScore));
+					var postfix = typeof(ScorePatch).GetMethod(nameof(ScorePatch.HSM_UpdateScore));
+					_harmonyCheat.Patch(original, postfix: new HarmonyMethod(postfix));
+				}
+			}
+			else if (Harmony.HasAnyPatches(HARMONY_GUID_CHEAT))
+			{
+				Logger.LogDebug("TNH score submission reenabled");
+				_harmonyCheat.UnpatchAll(HARMONY_GUID_CHEAT);
+			}
 		}
 		#endregion
 	}
