@@ -7,12 +7,12 @@ namespace BetterHands
 {
 	internal class ScorePatch
 	{
-		[HarmonyPatch(typeof(HighScoreManager), nameof(HighScoreManager.UpdateScore), new Type[] { typeof(string), typeof(int), typeof(Action<int, int>) })]
 		[HarmonyPatch(typeof(HighScoreManager), nameof(HighScoreManager.UpdateScore), new Type[] { typeof(SteamLeaderboard_t), typeof(int) })]
+		[HarmonyPatch(typeof(HighScoreManager), nameof(HighScoreManager.UpdateScore), new Type[] { typeof(string), typeof(int), typeof(Action<int, int>) })]
 		[HarmonyPrefix]
-		public static void HSM_UpdateScore()
+		private static bool SubmitTNHScore()
 		{
-			return;
+			return false;
 		}
 	}
 }

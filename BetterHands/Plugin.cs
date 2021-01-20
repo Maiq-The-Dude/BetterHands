@@ -3,7 +3,6 @@ using BetterHands.Configs;
 using Deli;
 using FistVR;
 using HarmonyLib;
-using RUST.Steamworks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Valve.VR;
@@ -366,15 +365,13 @@ namespace BetterHands
 				if (!Harmony.HasAnyPatches(HARMONY_GUID_CHEAT))
 				{
 					Logger.LogDebug("TNH score submission disabled");
-					var original = typeof(HighScoreManager).GetMethod(nameof(HighScoreManager.UpdateScore));
-					var postfix = typeof(ScorePatch).GetMethod(nameof(ScorePatch.HSM_UpdateScore));
-					_harmonyCheat.Patch(original, postfix: new HarmonyMethod(postfix));
+					_harmonyCheat.PatchAll(typeof(ScorePatch));
 				}
 			}
 			else if (Harmony.HasAnyPatches(HARMONY_GUID_CHEAT))
 			{
 				Logger.LogDebug("TNH score submission reenabled");
-				_harmonyCheat.UnpatchAll(HARMONY_GUID_CHEAT);
+				_harmonyCheat.UnpatchSelf();
 			}
 		}
 		#endregion
