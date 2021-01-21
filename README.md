@@ -16,6 +16,8 @@ Configs can be edited mid-game, but will require a scene reload to take effect.
 - Change mag palm pose position and rotation
 - Change click pressure required to mag palm
 - Change priority of Grabbity Gloves vs mag palming
+- Change palmable mag size limit. *Greater than `Medium` will disable TNH score submission*
+- Toggle `CursedPalms` which allows any interactive object to be palmed. Use at your own risk, bugs stemming from this will not be investigated. *Disables TNH score submission*
 - Rebind mag palm key
   - AX/BY buttons
   - Grip

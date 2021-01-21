@@ -150,7 +150,7 @@ namespace BetterHands
 		{
 			Configs.MagPalm.Enable.SettingChanged += MagPalmEnable_SettingChanged;
 			Configs.MagPalm.Enable.SettingChanged += Cheat_SettingChanged;
-			Configs.zCheat.CursedPalm.SettingChanged += Cheat_SettingChanged;
+			Configs.zCheat.CursedPalms.SettingChanged += Cheat_SettingChanged;
 			Configs.zCheat.SizeLimit.SettingChanged += Cheat_SettingChanged;
 
 			_harmonyHands = new Harmony(HARMONY_GUID_HANDS);
@@ -191,7 +191,7 @@ namespace BetterHands
 		{
 			// Only patch on state change
 			var cfg = Configs.zCheat;
-			if (Configs.MagPalm.Enable.Value && (cfg.CursedPalm.Value || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium))
+			if (Configs.MagPalm.Enable.Value && (cfg.CursedPalms.Value || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium))
 			{
 				Logger.LogDebug("TNH score submission disabled");
 				_harmonyCheat.PatchAll(typeof(ScorePatches));
@@ -226,7 +226,7 @@ namespace BetterHands
 		private bool AllowPalming(FVRInteractiveObject item)
 		{
 			var cfg = Configs.zCheat;
-			if (item is FVRFireArmMagazine mag && mag.Size <= cfg.SizeLimit.Value || cfg.CursedPalm.Value)
+			if (item is FVRFireArmMagazine mag && mag.Size <= cfg.SizeLimit.Value || cfg.CursedPalms.Value)
 			{
 				return true;
 			}
