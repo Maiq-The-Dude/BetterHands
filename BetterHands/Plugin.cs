@@ -106,35 +106,7 @@ namespace BetterHands
 		#endregion
 
 		#region Helpers
-		
-		// If mag palm keybind matches grabbity keybind, suppress mag palm input if grabbity sphere is on an item
-		private bool GrabbityProtection(FVRViveHand hand, MagPalmConfig.Keybind keybind)
-		{
-			if (Configs.MagPalm.GrabbityProtection.Value)
-			{
-				var grabbityState = GM.Options.ControlOptions.WIPGrabbityButtonState;
-				if (grabbityState == ControlOptions.WIPGrabbityButton.Trigger && (keybind == MagPalmConfig.Keybind.Trigger)
-					|| grabbityState == ControlOptions.WIPGrabbityButton.Grab && (keybind == MagPalmConfig.Keybind.Grip))
-				{
-					return !hand.Grabbity_HoverSphere.gameObject.activeSelf;
-				}
-			}
-
-			return true;
-		}
-
-		// Returns true if the held object is valid for palming
-		private bool AllowPalming(FVRInteractiveObject item)
-		{
-			var cfg = Configs.zCheat;
-			if (item is FVRFireArmMagazine mag && mag.Size <= cfg.SizeLimit.Value || cfg.CursedPalms.Value)
-			{
-				return true;
-			}
-
-			return false;
-		}
-		
+	
 		// Return the gameobject geo we are using
 		public static GameObject GetControllerFrom(FVRViveHand hand)
 		{
