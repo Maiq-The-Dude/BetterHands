@@ -12,9 +12,9 @@ namespace BetterHands.Patches
 
 		private static RootConfig _configs => Plugin.Instance.Configs;
 
-		[HarmonyPatch(typeof(FVRViveHand), nameof(FVRViveHand.UpdateControllerDefinition))]
+		[HarmonyPatch(typeof(FVRViveHand), nameof(FVRViveHand.DoInitialize))]
 		[HarmonyPostfix]
-		private static void UpdateControllerDefinition_Patch(FVRViveHand __instance)
+		private static void FVRViveHand_DoInitialize_Patch(FVRViveHand __instance)
 		{
 			CustomizeHand(__instance);
 		}

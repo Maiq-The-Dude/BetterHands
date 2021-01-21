@@ -1,4 +1,5 @@
-﻿using BetterHands.Configs;
+﻿using BepInEx.Logging;
+using BetterHands.Configs;
 using BetterHands.Patches;
 using Deli;
 using FistVR;
@@ -24,11 +25,6 @@ namespace BetterHands
 		private Harmony _harmonyMagPalm;
 		private Harmony _harmonyCheat;
 
-		private bool _magPalming;
-		private bool _quickbeltsEnabled;
-		private FVRViveHand _rightHand;
-		private FVRViveHand _leftHand;
-
 		public Plugin()
 		{
 			HARMONY_GUID_HANDS = GUID + ".hands";
@@ -46,103 +42,8 @@ namespace BetterHands
 		private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
 		{
 			Config.Reload();
-
-			_magPalming = Configs.MagPalm.Enable.Value;
-			_quickbeltsEnabled = GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled;
-
-			_rightHand = GM.CurrentPlayerBody.RightHand.GetComponent<FVRViveHand>();
-			_leftHand = GM.CurrentPlayerBody.LeftHand.GetComponent<FVRViveHand>();
 		}
-
-		#region Input
-		private void Update()
-		{
-			if (_magPalming && _quickbeltsEnabled)
-			{
-				PollInput(_rightHand);
-				PollInput(_leftHand);
-			}
-		}
-
-		private void PollInput(FVRViveHand hand)
-		{
-			// Get input from hand & config
-			var cfg = Configs.MagPalm;
-			var value = hand.IsThisTheRightHand ? cfg.RightKeybind.Value : cfg.LeftKeybind.Value;
-			var handInput = hand.Input;
-			var magnitude = handInput.TouchpadAxes.magnitude > cfg.ClickPressure.Value;
-			var input = value switch
-			{
-				MagPalmConfig.Keybind.AXButton => handInput.AXButtonDown,
-				MagPalmConfig.Keybind.BYButton => handInput.BYButtonDown,
-				MagPalmConfig.Keybind.Grip => handInput.GripDown,
-				MagPalmConfig.Keybind.Secondary2AxisNorth => handInput.Secondary2AxisNorthDown,
-				MagPalmConfig.Keybind.Secondary2AxisSouth => handInput.Secondary2AxisSouthDown,
-				MagPalmConfig.Keybind.Secondary2AxisEast => handInput.Secondary2AxisEastDown,
-				MagPalmConfig.Keybind.Secondary2AxisWest => handInput.Secondary2AxisWestDown,
-				MagPalmConfig.Keybind.TouchpadClickNorth => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.up) <= 45f,
-				MagPalmConfig.Keybind.TouchpadClickSouth => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.down) <= 45f,
-				MagPalmConfig.Keybind.TouchpadClickEast => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.right) <= 45f,
-				MagPalmConfig.Keybind.TouchpadClickWest => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.left) <= 45f,
-				MagPalmConfig.Keybind.TouchpadTapNorth => handInput.TouchpadNorthDown,
-				MagPalmConfig.Keybind.TouchpadTapSouth => handInput.TouchpadSouthDown,
-				MagPalmConfig.Keybind.TouchpadTapEast => handInput.TouchpadEastDown,
-				MagPalmConfig.Keybind.TouchpadTapWest => handInput.TouchpadWestDown,
-				MagPalmConfig.Keybind.Trigger => handInput.TriggerDown,
-				_ => false,
-			};
-
-			if (input && GrabbityProtection(hand, value))
-			{
-				MagPalmInput(hand, input);
-			}
-		}
-
-		private void MagPalmInput(FVRViveHand hand, bool input)
-		{
-			// Get handslot index here so quickbelt layout doesn't break retrieval mid-scene work
-			var qb = GM.CurrentPlayerBody.QuickbeltSlots;
-			for (var i = 0; i < qb.Count; i++)
-			{
-				if (qb[i].name == hand.name)
-				{
-					var obj = qb[i].CurObject;
-
-					// If current hand is empty, retrieve the object
-					if (hand.m_state == FVRViveHand.HandState.Empty)
-					{
-						if (obj != null)
-						{
-							hand.RetrieveObject(obj);
-						}
-					}
-
-					// else if it is holding something, swap the current hand and hand slot items
-					else if (AllowPalming(hand.CurrentInteractable))
-					{
-						var item = hand.CurrentInteractable;
-						item.ForceBreakInteraction();
-						item.SetAllCollidersToLayer(false, "NoCol");
-
-						if (obj != null)
-						{
-							item.transform.position = obj.transform.position;
-							hand.RetrieveObject(obj);
-						}
-
-						item.GetComponent<FVRPhysicalObject>().SetQuickBeltSlot(qb[i]);
-						item.SetAllCollidersToLayer(false, "Default");
-						if (GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
-						{
-							GetControllerFrom(hand).SetActive(false);
-						}
-					}
-					break;
-				}
-			}
-		}
-		#endregion
-
+	
 		#region PatchInit
 
 		// Subscribes to config change events & inits harmony patches 
@@ -205,7 +106,7 @@ namespace BetterHands
 		#endregion
 
 		#region Helpers
-
+		
 		// If mag palm keybind matches grabbity keybind, suppress mag palm input if grabbity sphere is on an item
 		private bool GrabbityProtection(FVRViveHand hand, MagPalmConfig.Keybind keybind)
 		{
@@ -233,7 +134,7 @@ namespace BetterHands
 
 			return false;
 		}
-
+		
 		// Return the gameobject geo we are using
 		public static GameObject GetControllerFrom(FVRViveHand hand)
 		{

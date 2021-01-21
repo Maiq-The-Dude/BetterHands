@@ -92,8 +92,8 @@ namespace BetterHands.Patches
 						mag.SetQuickBeltSlot(null);
 						mag.Load(firearm);
 
-						// very cool code to set return the hand to visible
-						Plugin.GetControllerFrom(mag.FireArm.m_hand.OtherHand).SetActive(true);
+						// set hand geo to active
+						mag.FireArm.m_hand.OtherHand.UpdateControllerDefinition();
 					}
 				}
 			}
@@ -111,7 +111,8 @@ namespace BetterHands.Patches
 				{
 					if (qb[i].name == __instance.name && qb[i].CurObject == null)
 					{
-						Plugin.GetControllerFrom(__instance).SetActive(true);
+						// set hand geo to active
+						__instance.UpdateControllerDefinition();
 						break;
 					}
 				}
@@ -138,6 +139,121 @@ namespace BetterHands.Patches
 				}
 			}
 		}
+		#endregion
+		
+		#region Input Patch
+
+		[HarmonyPatch(typeof(FVRViveHand), nameof(FVRViveHand.Update))]
+		[HarmonyPostfix]
+		private static void FVRViveHand_Update_Patch(FVRViveHand __instance)
+		{
+			if (_configs.MagPalm.Enable.Value && GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled)
+			{
+				// Get input from hand & config
+				var cfg = _configs.MagPalm;
+				var value = __instance.IsThisTheRightHand ? cfg.RightKeybind.Value : cfg.LeftKeybind.Value;
+				var handInput = __instance.Input;
+				var magnitude = handInput.TouchpadAxes.magnitude > cfg.ClickPressure.Value;
+				var input = value switch
+				{
+					MagPalmConfig.Keybind.AXButton => handInput.AXButtonDown,
+					MagPalmConfig.Keybind.BYButton => handInput.BYButtonDown,
+					MagPalmConfig.Keybind.Grip => handInput.GripDown,
+					MagPalmConfig.Keybind.Secondary2AxisNorth => handInput.Secondary2AxisNorthDown,
+					MagPalmConfig.Keybind.Secondary2AxisSouth => handInput.Secondary2AxisSouthDown,
+					MagPalmConfig.Keybind.Secondary2AxisEast => handInput.Secondary2AxisEastDown,
+					MagPalmConfig.Keybind.Secondary2AxisWest => handInput.Secondary2AxisWestDown,
+					MagPalmConfig.Keybind.TouchpadClickNorth => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.up) <= 45f,
+					MagPalmConfig.Keybind.TouchpadClickSouth => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.down) <= 45f,
+					MagPalmConfig.Keybind.TouchpadClickEast => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.right) <= 45f,
+					MagPalmConfig.Keybind.TouchpadClickWest => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.left) <= 45f,
+					MagPalmConfig.Keybind.TouchpadTapNorth => handInput.TouchpadNorthDown,
+					MagPalmConfig.Keybind.TouchpadTapSouth => handInput.TouchpadSouthDown,
+					MagPalmConfig.Keybind.TouchpadTapEast => handInput.TouchpadEastDown,
+					MagPalmConfig.Keybind.TouchpadTapWest => handInput.TouchpadWestDown,
+					MagPalmConfig.Keybind.Trigger => handInput.TriggerDown,
+					_ => false,
+				};
+
+				if (input && GrabbityProtection(__instance, value))
+				{
+					MagPalmInput(__instance, input);
+				}
+			}
+		}
+
+		private static void MagPalmInput(FVRViveHand hand, bool input)
+		{
+			// Get handslot index here so quickbelt layout doesn't break retrieval mid-scene work
+			var qb = GM.CurrentPlayerBody.QuickbeltSlots;
+			for (var i = 0; i < qb.Count; i++)
+			{
+				if (qb[i].name == hand.name)
+				{
+					var obj = qb[i].CurObject;
+
+					// If current hand is empty, retrieve the object
+					if (hand.m_state == FVRViveHand.HandState.Empty)
+					{
+						if (obj != null)
+						{
+							hand.RetrieveObject(obj);
+						}
+					}
+
+					// else if it is holding something, swap the current hand and hand slot items
+					else if (AllowPalming(hand.CurrentInteractable))
+					{
+						var item = hand.CurrentInteractable;
+						item.ForceBreakInteraction();
+						item.SetAllCollidersToLayer(false, "NoCol");
+
+						if (obj != null)
+						{
+							item.transform.position = obj.transform.position;
+							hand.RetrieveObject(obj);
+						}
+
+						item.GetComponent<FVRPhysicalObject>().SetQuickBeltSlot(qb[i]);
+						item.SetAllCollidersToLayer(false, "Default");
+						if (GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
+						{
+							// hide geo
+							Plugin.GetControllerFrom(hand).SetActive(false);
+						}
+					}
+					break;
+				}
+			}
+		}
+
+		// If mag palm keybind matches grabbity keybind, suppress mag palm input if grabbity sphere is on an item
+		private static bool GrabbityProtection(FVRViveHand hand, MagPalmConfig.Keybind keybind)
+		{
+			if (_configs.MagPalm.GrabbityProtection.Value)
+			{
+				var grabbityState = GM.Options.ControlOptions.WIPGrabbityButtonState;
+				if (grabbityState == ControlOptions.WIPGrabbityButton.Trigger && (keybind == MagPalmConfig.Keybind.Trigger)
+					|| grabbityState == ControlOptions.WIPGrabbityButton.Grab && (keybind == MagPalmConfig.Keybind.Grip))
+				{
+					return !hand.Grabbity_HoverSphere.gameObject.activeSelf;
+				}
+			}
+
+			return true;
+		}
+
+		// Returns true if the held object is valid for palming
+		private static bool AllowPalming(FVRInteractiveObject item)
+		{
+			var cfg = _configs.zCheat;
+			if (item is FVRFireArmMagazine mag && mag.Size <= cfg.SizeLimit.Value || cfg.CursedPalms.Value)
+			{
+				return true;
+			}
+
+			return false;
+		}
+		#endregion
 	}
-	#endregion
 }
