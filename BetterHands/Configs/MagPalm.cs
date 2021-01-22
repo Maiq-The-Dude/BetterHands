@@ -1,6 +1,5 @@
 ﻿using BepInEx.Configuration;
 using UnityEngine;
-using Valve.VR.InteractionSystem;
 
 namespace BetterHands.Configs
 {
