@@ -9,7 +9,7 @@ namespace BetterHands.Patches
 	{
 		private static RootConfig _configs => Plugin.Instance.Configs;
 
-		#region Quickbelt Creation Patch
+		#region MagPalm Creation Patch
 
 		// Add mag palm slots after configuring quickbelt
 		[HarmonyPatch(typeof(FVRPlayerBody), nameof(FVRPlayerBody.ConfigureQuickbelt))]
@@ -54,93 +54,167 @@ namespace BetterHands.Patches
 				var newSlot = GameObject.Instantiate(slot, pose);
 				newSlot.localPosition = Vector3.zero;
 				var geo = newSlot.Find("QB_TransformTarget");
-				geo.GetChild(0).gameObject.SetActive(false);
-				geo.GetChild(1).gameObject.SetActive(false);
+				geo.GetChild(0).localScale = new Vector3(0.001f, 0.001f, 0.001f);
+				geo.GetChild(1).localScale = new Vector3(0.001f, 0.001f, 0.001f);
 
 				var newSlotQB = newSlot.GetComponent<FVRQuickBeltSlot>();
 				newSlotQB.Type = FVRQuickBeltSlot.QuickbeltSlotType.Standard;
-				newSlotQB.IsSelectable = false;
+				newSlotQB.Shape = FVRQuickBeltSlot.QuickbeltSlotShape.Rectalinear;
 				newSlotQB.name = hand.name;
+
+				if (!cfg.Interactable.Value)
+				{
+					geo.GetChild(0).gameObject.SetActive(false);
+					geo.GetChild(1).gameObject.SetActive(false);
+					newSlotQB.IsSelectable = false;
+				}
 
 				qb.Add(newSlotQB);
 			}
 		}
 		#endregion
 
-		#region Quickbelt Functionality Patches
+		#region MagPalm Functionality Patches
 
-		// Allow mags from our hand slots to load into firearms
+		// Allow palmed mags to load into firearms
 		[HarmonyPatch(typeof(FVRFireArmReloadTriggerMag), nameof(FVRFireArmReloadTriggerMag.OnTriggerEnter))]
 		[HarmonyPostfix]
 		private static void ReloadTriggerMag_Patch(FVRFireArmReloadTriggerMag __instance, Collider collider)
 		{
-			var mag = __instance.Magazine;
-			var bod = GM.CurrentPlayerBody;
-			if (mag != null && mag.QuickbeltSlot != null && (mag.QuickbeltSlot.name == bod.RightHand.name || mag.QuickbeltSlot.name == bod.LeftHand.name))
+			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled)
 			{
-				if (mag.FireArm == null && collider.gameObject.tag == "FVRFireArmReloadTriggerWell")
+				var mag = __instance.Magazine;
+				var bod = GM.CurrentPlayerBody;
+				if (mag != null && mag.QuickbeltSlot != null && (mag.QuickbeltSlot.name == bod.RightHand.name || mag.QuickbeltSlot.name == bod.LeftHand.name))
 				{
-					var triggerWell = collider.gameObject.GetComponent<FVRFireArmReloadTriggerWell>();
-					var firearm = triggerWell.FireArm;
-					var magType = firearm.MagazineType;
-					if (triggerWell.UsesTypeOverride)
+					if (mag.FireArm == null && collider.tag == "FVRFireArmReloadTriggerWell")
 					{
-						magType = triggerWell.TypeOverride;
-					}
-					if (magType == mag.MagazineType && (firearm.EjectDelay <= 0f || mag != firearm.LastEjectedMag) && firearm.Magazine == null)
-					{
-						mag.SetQuickBeltSlot(null);
-						mag.Load(firearm);
-
-						// set hand geo to active
-						mag.FireArm.m_hand.OtherHand.UpdateControllerDefinition();
+						var triggerWell = collider.GetComponent<FVRFireArmReloadTriggerWell>();
+						var firearm = triggerWell.FireArm;
+						var magType = firearm.MagazineType;
+						if (mag.MagazineType == triggerWell.TypeOverride || mag.MagazineType == magType && (firearm.EjectDelay <= 0f || mag != firearm.LastEjectedMag) && firearm.Magazine == null)
+						{
+							// Remove from qb, load, buzz loading hand, and unhide controller geo
+							mag.m_isSpawnLock = false;
+							mag.SetQuickBeltSlot(null);
+							mag.Load(firearm);
+							mag.FireArm.m_hand.OtherHand.Buzz(mag.FireArm.m_hand.Buzzer.Buzz_BeginInteraction);
+							mag.FireArm.m_hand.OtherHand.UpdateControllerDefinition();
+						}
 					}
 				}
 			}
 		}
 
-		// Makes controller geo visible if slots & hands empty
-		[HarmonyPatch(typeof(FVRViveHand), "CurrentInteractable", MethodType.Setter)]
-		[HarmonyPostfix]
-		private static void CurrentInteractable_Patch(FVRViveHand __instance)
-		{
-			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
-			{
-				var qb = GM.CurrentPlayerBody.QuickbeltSlots;
-				for (var i = 0; i < qb.Count; i++)
-				{
-					if (qb[i].name == __instance.name && qb[i].CurObject == null)
-					{
-						// set hand geo to active
-						__instance.UpdateControllerDefinition();
-						break;
-					}
-				}
-			}
-		}
-
-		// Allow mags in hand slots to hit physical mag releases
+		// Allow palmed mags to hit physical mag releases
 		[HarmonyPatch(typeof(PhysicalMagazineReleaseLatch), nameof(PhysicalMagazineReleaseLatch.OnCollisionEnter))]
 		[HarmonyPostfix]
 		private static void PhysicalMagRelease_Patch(PhysicalMagazineReleaseLatch __instance, Collision col)
 		{
 			if (col.collider.attachedRigidbody != null && col.collider.attachedRigidbody.gameObject.GetComponent<FVRPhysicalObject>() != null)
 			{
-				var mag = col.collider.attachedRigidbody.gameObject.GetComponent<FVRPhysicalObject>();
-				var bod = GM.CurrentPlayerBody;
-				var qb = bod.QuickbeltSlots;
-				for (var i = 0; i < qb.Count; i++)
+				if (PalmSlotExists())
 				{
-					if (qb[i].name == bod.RightHand.name || qb[i].name == bod.LeftHand.name)
-					{
-						__instance.timeSinceLastCollision = 0f;
-						break;
-					}
+					__instance.timeSinceLastCollision = 0f;
+				}
+			}
+		}
+
+		// Disable spawnlocking on magpalm slots
+		[HarmonyPatch(typeof(FVRPhysicalObject), nameof(FVRPhysicalObject.ToggleQuickbeltState))]
+		[HarmonyPostfix]
+		private static void ToggleQuickbeltState_Patch(FVRPhysicalObject __instance)
+		{
+			if (ObjInPalmSlot(__instance.m_quickbeltSlot, __instance))
+			{
+				__instance.m_isSpawnLock = false;
+			}
+		}
+		#endregion
+
+		#region Controller Geo Patches
+
+		// Makes controller geo visible if slots & hands empty
+		[HarmonyPatch(typeof(FVRViveHand), "CurrentInteractable", MethodType.Setter)]
+		[HarmonyPostfix]
+		private static void CurrentInteractable_Patch(FVRViveHand __instance)
+		{
+			if (GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
+			{
+				if (ObjInPalmSlot(__instance, null))
+				{
+					__instance.UpdateControllerDefinition();
+				}
+			}
+		}
+
+		[HarmonyPatch(typeof(FVRInteractiveObject), nameof(FVRInteractiveObject.BeginInteraction))]
+		[HarmonyPostfix]
+		private static void FVRInteractiveObject_BeginInteraction_Patch(FVRInteractiveObject __instance)
+		{
+			if (GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
+			{
+				if (ObjInPalmSlot(__instance.m_hand.OtherHand, null))
+				{
+					__instance.m_hand.OtherHand.UpdateControllerDefinition();
 				}
 			}
 		}
 		#endregion
-		
+
+		#region MagPalm Slot Checks
+		// Is object in magpalm slot
+		private static bool ObjInPalmSlot(FVRQuickBeltSlot slot, FVRPhysicalObject obj)
+		{
+			var bod = GM.CurrentPlayerBody;
+			var hand = bod.RightHand.GetComponent<FVRViveHand>();
+			if (slot.name == bod.LeftHand.name)
+			{
+				hand = bod.LeftHand.GetComponent<FVRViveHand>();
+			}
+
+			return ObjInPalmSlot(hand, obj);
+		}
+
+		private static bool ObjInPalmSlot(FVRViveHand hand, FVRPhysicalObject obj)
+		{
+			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled)
+			{
+				var bod = GM.CurrentPlayerBody;
+				var qb = bod.QuickbeltSlots;
+				for (var i = 0; i < qb.Count; i++)
+				{
+					if ((qb[i].name == hand.name) && qb[i].CurObject == obj)
+					{
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+
+		private static bool PalmSlotExists()
+		{
+			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled)
+			{
+				var bod = GM.CurrentPlayerBody;
+				var qb = bod.QuickbeltSlots;
+				var left = bod.LeftHand;
+				var right = bod.RightHand;
+				for (var i = 0; i < qb.Count; i++)
+				{
+					if ((qb[i].name == left.name || qb[i].name == right.name))
+					{
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+		#endregion
+
 		#region Input Patch
 
 		[HarmonyPatch(typeof(FVRViveHand), nameof(FVRViveHand.Update))]
@@ -184,7 +258,7 @@ namespace BetterHands.Patches
 
 		private static void MagPalmInput(FVRViveHand hand, bool input)
 		{
-			// Get handslot index here so quickbelt layout doesn't break retrieval mid-scene work
+			// Get magpalm index here so quickbelt layout doesn't break retrieval mid-scene work
 			var qb = GM.CurrentPlayerBody.QuickbeltSlots;
 			for (var i = 0; i < qb.Count; i++)
 			{
@@ -201,7 +275,7 @@ namespace BetterHands.Patches
 						}
 					}
 
-					// else if it is holding something, swap the current hand and hand slot items
+					// else if palming something & not spawnlocked, swap the current hand and hand slot items
 					else if (AllowPalming(hand.CurrentInteractable))
 					{
 						var item = hand.CurrentInteractable;
@@ -214,8 +288,9 @@ namespace BetterHands.Patches
 							hand.RetrieveObject(obj);
 						}
 
-						item.GetComponent<FVRPhysicalObject>().SetQuickBeltSlot(qb[i]);
+						item.GetComponent<FVRPhysicalObject>().ForceObjectIntoInventorySlot(qb[i]);
 						item.SetAllCollidersToLayer(false, "Default");
+
 						if (GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
 						{
 							// hide geo

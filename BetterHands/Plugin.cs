@@ -1,5 +1,4 @@
-﻿using BepInEx.Logging;
-using BetterHands.Configs;
+﻿using BetterHands.Configs;
 using BetterHands.Patches;
 using Deli;
 using FistVR;
@@ -43,7 +42,7 @@ namespace BetterHands
 		{
 			Config.Reload();
 		}
-	
+
 		#region PatchInit
 
 		// Subscribes to config change events & inits harmony patches 
@@ -106,7 +105,7 @@ namespace BetterHands
 		#endregion
 
 		#region Helpers
-	
+
 		// Return the gameobject geo we are using
 		public static GameObject GetControllerFrom(FVRViveHand hand)
 		{
