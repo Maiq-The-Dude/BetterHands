@@ -8,6 +8,9 @@ namespace BetterHands.Patches
 	internal class MagPalmPatches
 	{
 		private static RootConfig _configs => Plugin.Instance.Configs;
+		private static FVRPlayerBody _playerBody => Plugin.Instance.PlayerBody;
+		private static Transform _rightHand => Plugin.Instance.RightHand;
+		private static Transform _leftHand => Plugin.Instance.LeftHand;
 
 		#region MagPalm Creation Patch
 
@@ -61,7 +64,7 @@ namespace BetterHands.Patches
 				newSlotQB.Shape = FVRQuickBeltSlot.QuickbeltSlotShape.Rectalinear;
 				newSlotQB.name = hand.name;
 
-				if (!cfg.Interactable.Value)
+				if (!cfg.Controls.Interactable.Value)
 				{
 					geo.GetChild(0).gameObject.SetActive(false);
 					geo.GetChild(1).gameObject.SetActive(false);
@@ -296,8 +299,39 @@ namespace BetterHands.Patches
 		}
 		#endregion
 
-		#region Input Patch
+		#region Input Patches
 
+		// CollisionPrevention patch
+		[HarmonyPatch(typeof(FVRMovementManager), nameof(FVRMovementManager.FU))]
+		[HarmonyPostfix]
+		private static void FVRMovementManager_FU_Patch(FVRMovementManager __instance)
+		{
+			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && _configs.MagPalm.CollisionPrevention.Value)
+			{
+				var vel = __instance.m_armSwingerVelocity + __instance.m_twoAxisVelocity;
+				var qb = _playerBody.QuickbeltSlots;
+				for (var i = 0; i < qb.Count; i++)
+				{
+					if ((qb[i].name == _leftHand.name || qb[i].name == _rightHand.name))
+					{
+						var obj = qb[i].CurObject;
+						if (obj != null)
+						{
+							if (vel.magnitude > _configs.MagPalm.CollisionPreventionVelocity.Value)
+							{
+								obj.SetAllCollidersToLayer(false, "NoCol");
+							}
+							else
+							{
+								obj.SetAllCollidersToLayer(false, "Default");
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Input hook
 		[HarmonyPatch(typeof(FVRViveHand), nameof(FVRViveHand.Update))]
 		[HarmonyPostfix]
 		private static void FVRViveHand_Update_Patch(FVRViveHand __instance)
@@ -305,28 +339,28 @@ namespace BetterHands.Patches
 			if (_configs.MagPalm.Enable.Value && GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled)
 			{
 				// Get input from hand & config
-				var cfg = _configs.MagPalm;
+				var cfg = _configs.MagPalm.Controls;
 				var value = __instance.IsThisTheRightHand ? cfg.RightKeybind.Value : cfg.LeftKeybind.Value;
 				var handInput = __instance.Input;
 				var magnitude = handInput.TouchpadAxes.magnitude > cfg.ClickPressure.Value;
 				var input = value switch
 				{
-					MagPalmConfig.Keybind.AXButton => handInput.AXButtonDown,
-					MagPalmConfig.Keybind.BYButton => handInput.BYButtonDown,
-					MagPalmConfig.Keybind.Grip => handInput.GripDown,
-					MagPalmConfig.Keybind.Secondary2AxisNorth => handInput.Secondary2AxisNorthDown,
-					MagPalmConfig.Keybind.Secondary2AxisSouth => handInput.Secondary2AxisSouthDown,
-					MagPalmConfig.Keybind.Secondary2AxisEast => handInput.Secondary2AxisEastDown,
-					MagPalmConfig.Keybind.Secondary2AxisWest => handInput.Secondary2AxisWestDown,
-					MagPalmConfig.Keybind.TouchpadClickNorth => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.up) <= 45f,
-					MagPalmConfig.Keybind.TouchpadClickSouth => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.down) <= 45f,
-					MagPalmConfig.Keybind.TouchpadClickEast => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.right) <= 45f,
-					MagPalmConfig.Keybind.TouchpadClickWest => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.left) <= 45f,
-					MagPalmConfig.Keybind.TouchpadTapNorth => handInput.TouchpadNorthDown,
-					MagPalmConfig.Keybind.TouchpadTapSouth => handInput.TouchpadSouthDown,
-					MagPalmConfig.Keybind.TouchpadTapEast => handInput.TouchpadEastDown,
-					MagPalmConfig.Keybind.TouchpadTapWest => handInput.TouchpadWestDown,
-					MagPalmConfig.Keybind.Trigger => handInput.TriggerDown,
+					MagPalmControlsConfig.Keybind.AXButton => handInput.AXButtonDown,
+					MagPalmControlsConfig.Keybind.BYButton => handInput.BYButtonDown,
+					MagPalmControlsConfig.Keybind.Grip => handInput.GripDown,
+					MagPalmControlsConfig.Keybind.Secondary2AxisNorth => handInput.Secondary2AxisNorthDown,
+					MagPalmControlsConfig.Keybind.Secondary2AxisSouth => handInput.Secondary2AxisSouthDown,
+					MagPalmControlsConfig.Keybind.Secondary2AxisEast => handInput.Secondary2AxisEastDown,
+					MagPalmControlsConfig.Keybind.Secondary2AxisWest => handInput.Secondary2AxisWestDown,
+					MagPalmControlsConfig.Keybind.TouchpadClickNorth => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.up) <= 45f,
+					MagPalmControlsConfig.Keybind.TouchpadClickSouth => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.down) <= 45f,
+					MagPalmControlsConfig.Keybind.TouchpadClickEast => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.right) <= 45f,
+					MagPalmControlsConfig.Keybind.TouchpadClickWest => handInput.TouchpadDown && magnitude && Vector2.Angle(handInput.TouchpadAxes, Vector2.left) <= 45f,
+					MagPalmControlsConfig.Keybind.TouchpadTapNorth => handInput.TouchpadNorthDown,
+					MagPalmControlsConfig.Keybind.TouchpadTapSouth => handInput.TouchpadSouthDown,
+					MagPalmControlsConfig.Keybind.TouchpadTapEast => handInput.TouchpadEastDown,
+					MagPalmControlsConfig.Keybind.TouchpadTapWest => handInput.TouchpadWestDown,
+					MagPalmControlsConfig.Keybind.Trigger => handInput.TriggerDown,
 					_ => false,
 				};
 
@@ -383,13 +417,13 @@ namespace BetterHands.Patches
 		}
 
 		// If mag palm keybind matches grabbity keybind, suppress mag palm input if grabbity sphere is on an item
-		private static bool GrabbityProtection(FVRViveHand hand, MagPalmConfig.Keybind keybind)
+		private static bool GrabbityProtection(FVRViveHand hand, MagPalmControlsConfig.Keybind keybind)
 		{
-			if (_configs.MagPalm.GrabbityProtection.Value)
+			if (_configs.MagPalm.Controls.GrabbityProtection.Value)
 			{
 				var grabbityState = GM.Options.ControlOptions.WIPGrabbityButtonState;
-				if (grabbityState == ControlOptions.WIPGrabbityButton.Trigger && (keybind == MagPalmConfig.Keybind.Trigger)
-					|| grabbityState == ControlOptions.WIPGrabbityButton.Grab && (keybind == MagPalmConfig.Keybind.Grip))
+				if (grabbityState == ControlOptions.WIPGrabbityButton.Trigger && (keybind == MagPalmControlsConfig.Keybind.Trigger)
+					|| grabbityState == ControlOptions.WIPGrabbityButton.Grab && (keybind == MagPalmControlsConfig.Keybind.Grip))
 				{
 					return !hand.Grabbity_HoverSphere.gameObject.activeSelf;
 				}
