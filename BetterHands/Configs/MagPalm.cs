@@ -26,6 +26,7 @@ namespace BetterHands.Configs
 		}
 
 		public ConfigEntry<bool> Enable { get; }
+		public ConfigEntry<bool> EasyPalmLoading { get; }
 		public ConfigEntry<float> ClickPressure { get; }
 		public ConfigEntry<bool> GrabbityProtection { get; }
 		public ConfigEntry<bool> Interactable { get; }
@@ -36,7 +37,8 @@ namespace BetterHands.Configs
 
 		public MagPalmConfig(ConfigFile config, string section)
 		{
-			Enable = config.Bind(section + "." + nameof(Enable), nameof(Enable), true, "Allow holding two magazines via palming");
+			Enable = config.Bind(section + ".." + nameof(Enable), nameof(Enable), true, "Allow holding two magazines via palming");
+			EasyPalmLoading = config.Bind(section + "." + nameof(EasyPalmLoading), nameof(EasyPalmLoading), false, "Enables easy mag loading for just the palmed mag. Not necessary if Easy Mag Reloading is already turned on ingame");
 			ClickPressure = config.Bind(section + "." + nameof(ClickPressure), nameof(ClickPressure), 0.2f, "Amount of pressure needed for TouchpadClick keybinds");
 			GrabbityProtection = config.Bind(section + "." + nameof(GrabbityProtection), nameof(GrabbityProtection), true, "If mag palm keybind matches grabbity keybind, prioritize grabbity input over mag palm");
 			Interactable = config.Bind(section + "." + nameof(Interactable), nameof(Interactable), false, "Allow grabbing items directly from palms with the other hand");

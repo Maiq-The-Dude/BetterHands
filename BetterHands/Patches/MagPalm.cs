@@ -37,7 +37,6 @@ namespace BetterHands.Patches
 
 				if (fvrhand.IsThisTheRightHand)
 				{
-
 					pose.localPosition = cfg.Position.Value;
 					pose.localRotation = Quaternion.Euler(cfg.Rotation.Value);
 				}
@@ -108,7 +107,7 @@ namespace BetterHands.Patches
 			{
 				var triggerWell = collider.gameObject.GetComponent<FVRFireArmClipTriggerWell>();
 				var firearm = triggerWell.FireArm;
-				if (firearm.ClipType == clip.ClipType && firearm.ClipEjectDelay <= 0f && firearm.Clip == null)
+				if (triggerWell != null && triggerWell.FireArm != null && firearm.ClipType == clip.ClipType && firearm.ClipEjectDelay <= 0f && firearm.Clip == null)
 				{
 					// Remove from qb, load, buzz loading hand, and unhide controller geo
 					clip.m_isSpawnLock = false;
@@ -126,6 +125,7 @@ namespace BetterHands.Patches
 			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled)
 			{
 				FVRPhysicalObject fvrObj = null;
+
 				if (obj is FVRFireArmMagazine mag && mag.FireArm == null)
 				{
 					fvrObj = mag;
@@ -140,11 +140,7 @@ namespace BetterHands.Patches
 				{
 					if (col.gameObject.CompareTag(layer))
 					{
-						var triggerWell = col.gameObject.GetComponent<FVRFireArmClipTriggerWell>();
-						if (triggerWell != null && triggerWell.FireArm != null)
-						{
-							return true;
-						}
+						return true;
 					}
 				}
 			}
@@ -176,6 +172,39 @@ namespace BetterHands.Patches
 				__instance.m_isSpawnLock = false;
 			}
 		}
+
+		// Easy mag load support
+		[HarmonyPatch(typeof(FVRFireArmMagazine), nameof(FVRFireArmMagazine.FVRFixedUpdate))]
+		[HarmonyPostfix]
+		private static void FVRFireArmMagazine_FVRFixedUpdate_Patch(FVRFireArmMagazine __instance)
+		{
+			var qbSlot = __instance.QuickbeltSlot;
+			if ((GM.Options.ControlOptions.UseEasyMagLoading || _configs.MagPalm.EasyPalmLoading.Value) && ObjInPalmSlot(qbSlot, __instance))
+			{
+				var bod = GM.CurrentPlayerBody;
+				var hand = bod.RightHand.GetComponent<FVRViveHand>();
+				if (qbSlot.name == bod.LeftHand.name)
+				{
+					hand = bod.LeftHand.GetComponent<FVRViveHand>();
+				}
+				if (hand.OtherHand.CurrentInteractable is FVRFireArm firearm)
+				{
+					if (firearm != null && firearm.MagazineType == __instance.MagazineType && firearm.GetMagMountPos(__instance.IsBeltBox) != null)
+					{
+						if (Vector3.Distance(__instance.RoundEjectionPos.position, firearm.GetMagMountPos(__instance.IsBeltBox).position) <= 0.15f)
+						{
+							__instance.SetAllCollidersToLayer(false, "NoCol");
+							__instance.IsNonPhysForLoad = true;
+						}
+						else
+						{
+							__instance.SetAllCollidersToLayer(false, "Default");
+							__instance.IsNonPhysForLoad = false;
+						}
+					}
+				}
+			}
+		}
 		#endregion
 
 		#region Controller Geo Patches
@@ -194,6 +223,7 @@ namespace BetterHands.Patches
 			}
 		}
 
+		// Return controller geo if palmed item is removed
 		[HarmonyPatch(typeof(FVRInteractiveObject), nameof(FVRInteractiveObject.BeginInteraction))]
 		[HarmonyPostfix]
 		private static void FVRInteractiveObject_BeginInteraction_Patch(FVRInteractiveObject __instance)
@@ -212,19 +242,24 @@ namespace BetterHands.Patches
 		// Is object in magpalm slot
 		private static bool ObjInPalmSlot(FVRQuickBeltSlot slot, FVRPhysicalObject obj)
 		{
-			var bod = GM.CurrentPlayerBody;
-			var hand = bod.RightHand.GetComponent<FVRViveHand>();
-			if (slot.name == bod.LeftHand.name)
+			if (slot != null)
 			{
-				hand = bod.LeftHand.GetComponent<FVRViveHand>();
+				var bod = GM.CurrentPlayerBody;
+				var hand = bod.RightHand.GetComponent<FVRViveHand>();
+				if (slot.name == bod.LeftHand.name)
+				{
+					hand = bod.LeftHand.GetComponent<FVRViveHand>();
+				}
+
+				return ObjInPalmSlot(hand, obj);
 			}
 
-			return ObjInPalmSlot(hand, obj);
+			return false;
 		}
 
 		private static bool ObjInPalmSlot(FVRViveHand hand, FVRPhysicalObject obj)
 		{
-			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled)
+			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && hand != null)
 			{
 				var bod = GM.CurrentPlayerBody;
 				var qb = bod.QuickbeltSlots;
@@ -339,7 +374,6 @@ namespace BetterHands.Patches
 
 						if (GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
 						{
-							// hide geo
 							Plugin.GetControllerFrom(hand).SetActive(false);
 						}
 					}
