@@ -79,31 +79,77 @@ namespace BetterHands.Patches
 		// Allow palmed mags to load into firearms
 		[HarmonyPatch(typeof(FVRFireArmReloadTriggerMag), nameof(FVRFireArmReloadTriggerMag.OnTriggerEnter))]
 		[HarmonyPostfix]
-		private static void ReloadTriggerMag_Patch(FVRFireArmReloadTriggerMag __instance, Collider collider)
+		private static void FVRFireArmReloadTriggerMag_Patch(FVRFireArmReloadTriggerMag __instance, Collider collider)
+		{
+			var mag = __instance.Magazine;
+			if (FirearmLoadCheck(mag, collider, "FVRFireArmReloadTriggerWell"))
+			{
+				var triggerWell = collider.GetComponent<FVRFireArmReloadTriggerWell>();
+				var firearm = triggerWell.FireArm;
+				if (mag.MagazineType == triggerWell.TypeOverride || mag.MagazineType == firearm.MagazineType && (firearm.EjectDelay <= 0f || mag != firearm.LastEjectedMag) && firearm.Magazine == null)
+				{
+					// Remove from qb, load, buzz loading hand, and unhide controller geo
+					mag.m_isSpawnLock = false;
+					mag.SetQuickBeltSlot(null);
+					mag.Load(firearm);
+					mag.FireArm.m_hand.OtherHand.Buzz(mag.FireArm.m_hand.Buzzer.Buzz_BeginInteraction);
+					mag.FireArm.m_hand.OtherHand.UpdateControllerDefinition();
+				}
+			}
+		}
+
+		// Allow palmed clips to load into firearms
+		[HarmonyPatch(typeof(FVRFireArmClipTriggerClip), nameof(FVRFireArmClipTriggerClip.OnTriggerEnter))]
+		[HarmonyPostfix]
+		private static void FVRFireArmClipTriggerClip_Patch(FVRFireArmClipTriggerClip __instance, Collider collider)
+		{
+			var clip = __instance.Clip;
+			if (FirearmLoadCheck(clip, collider, "FVRFireArmClipReloadTriggerWell"))
+			{
+				var triggerWell = collider.gameObject.GetComponent<FVRFireArmClipTriggerWell>();
+				var firearm = triggerWell.FireArm;
+				if (firearm.ClipType == clip.ClipType && firearm.ClipEjectDelay <= 0f && firearm.Clip == null)
+				{
+					// Remove from qb, load, buzz loading hand, and unhide controller geo
+					clip.m_isSpawnLock = false;
+					clip.SetQuickBeltSlot(null);
+					clip.Load(firearm);
+					clip.FireArm.m_hand.OtherHand.Buzz(clip.FireArm.m_hand.Buzzer.Buzz_BeginInteraction);
+					clip.FireArm.m_hand.OtherHand.UpdateControllerDefinition();
+				}
+			}
+		}
+
+		// Shared load checks between mag & clip
+		private static bool FirearmLoadCheck(FVRPhysicalObject obj, Collider col, string layer)
 		{
 			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled)
 			{
-				var mag = __instance.Magazine;
-				var bod = GM.CurrentPlayerBody;
-				if (mag != null && mag.QuickbeltSlot != null && (mag.QuickbeltSlot.name == bod.RightHand.name || mag.QuickbeltSlot.name == bod.LeftHand.name))
+				FVRPhysicalObject fvrObj = null;
+				if (obj is FVRFireArmMagazine mag && mag.FireArm == null)
 				{
-					if (mag.FireArm == null && collider.tag == "FVRFireArmReloadTriggerWell")
+					fvrObj = mag;
+				}
+				else if (obj is FVRFireArmClip clip && clip.FireArm == null)
+				{
+					fvrObj = clip;
+				}
+
+				var bod = GM.CurrentPlayerBody;
+				if (fvrObj != null && fvrObj.QuickbeltSlot != null && ((fvrObj.QuickbeltSlot.name == bod.RightHand.name || fvrObj.QuickbeltSlot.name == bod.LeftHand.name)))
+				{
+					if (col.gameObject.CompareTag(layer))
 					{
-						var triggerWell = collider.GetComponent<FVRFireArmReloadTriggerWell>();
-						var firearm = triggerWell.FireArm;
-						var magType = firearm.MagazineType;
-						if (mag.MagazineType == triggerWell.TypeOverride || mag.MagazineType == magType && (firearm.EjectDelay <= 0f || mag != firearm.LastEjectedMag) && firearm.Magazine == null)
+						var triggerWell = col.gameObject.GetComponent<FVRFireArmClipTriggerWell>();
+						if (triggerWell != null && triggerWell.FireArm != null)
 						{
-							// Remove from qb, load, buzz loading hand, and unhide controller geo
-							mag.m_isSpawnLock = false;
-							mag.SetQuickBeltSlot(null);
-							mag.Load(firearm);
-							mag.FireArm.m_hand.OtherHand.Buzz(mag.FireArm.m_hand.Buzzer.Buzz_BeginInteraction);
-							mag.FireArm.m_hand.OtherHand.UpdateControllerDefinition();
+							return true;
 						}
 					}
 				}
 			}
+
+			return false;
 		}
 
 		// Allow palmed mags to hit physical mag releases
@@ -322,7 +368,7 @@ namespace BetterHands.Patches
 		private static bool AllowPalming(FVRInteractiveObject item)
 		{
 			var cfg = _configs.zCheat;
-			if (item is FVRFireArmMagazine mag && mag.Size <= cfg.SizeLimit.Value || cfg.CursedPalms.Value)
+			if (item is FVRFireArmMagazine mag && mag.Size <= cfg.SizeLimit.Value || item is FVRFireArmClip || cfg.CursedPalms.Value)
 			{
 				return true;
 			}
