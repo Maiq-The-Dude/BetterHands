@@ -17,7 +17,7 @@ namespace BetterHands.Configs
 		{
 			Enable = config.Bind(section + "..." + nameof(Enable), nameof(Enable), true, "Allow holding two magazines via palming");
 
-			CollisionPrevention = config.Bind(section + ".." + nameof(CollisionPrevention), nameof(CollisionPrevention), true, "Why moving above CollisionPreventionVelocity, disable palmed item collision. Prevents physics bumbles while moving quickly. Only for Armswinger and Twinstick locomotion");
+			CollisionPrevention = config.Bind(section + ".." + nameof(CollisionPrevention), nameof(CollisionPrevention), true, "Prevents physics issues & clanking by disabling palmed item collision while moving above CollisionPreventionVelocity. Only for Armswinger and Twinstick locomotion");
 			CollisionPreventionVelocity = config.Bind(section + ".." + nameof(CollisionPreventionVelocity), nameof(CollisionPreventionVelocity), 2.0f, "Threshold for CollisionPrevention to kick in for palmed items");
 			EasyPalmLoading = config.Bind(section + ".." + nameof(EasyPalmLoading), nameof(EasyPalmLoading), false, "Enables easy mag loading for just the palmed mag. Not necessary if Easy Mag Reloading is already turned on ingame");
 
