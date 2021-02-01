@@ -26,7 +26,7 @@ Mag palming allows you to carry two small sized magazines in one hand. To do thi
 - Resize individual interaction spheres
 
 ## Installation
-Requires [BepInEx 5.4](https://github.com/BepInEx/BepInEx/releases/latest) and [Deli 0.2.5](https://github.com/Deli-Counter/Deli).
+Requires [BepInEx 5.4](https://github.com/BepInEx/BepInEx/releases/latest) and [Deli 0.2.5](https://github.com/Deli-Collective/Deli/releases/tag/v0.2.5).
 
 Download the [latest release of BetterHands](https://github.com/Maiq-The-Dude/BetterHands/releases/latest) and place `betterhands.deli` into `h3vr/mods` folder.
 
