@@ -1,4 +1,6 @@
 # BetterHands
+[![version](https://img.shields.io/github/v/release/Maiq-The-Dude/BetterHands?&label=version&style=flat-square)](https://github.com/Maiq-The-Dude/BetterHands/releases/latest) [![discord](https://img.shields.io/discord/777351065950879744?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2&style=flat-square)](https://discord.gg/g8xeFyt42j)
+
 Mod for H3VR to recolor controller geo, resize interaction spheres, and add mag palming.
 All features are optional and configured via `mods/configs/betterhands.cfg`. Configs can be edited mid-game, but will require a scene reload to take effect.
 
