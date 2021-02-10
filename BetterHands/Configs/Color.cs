@@ -13,12 +13,12 @@ namespace BetterHands.Configs
 		public ColorConfig(ConfigFile config, string section)
 		{
 			var i = new Vector4(81, 140, 255, 1);
-			MaterialA = config.Bind(section, nameof(MaterialA), i, "Material A of both hands");
+			MaterialA = config.Bind(section, nameof(MaterialA), i, "Material A of both hands (RGBA)");
 
 			var j = new Vector4(197, 120, 179, 1);
-			MaterialB = config.Bind(section, nameof(MaterialB), j, "Material B of both hands");
+			MaterialB = config.Bind(section, nameof(MaterialB), j, "Material B of both hands (RGBA)");
 
-			InteractSphere = config.Bind(section, nameof(InteractSphere), i, "Color of interaction spheres");
+			InteractSphere = config.Bind(section, nameof(InteractSphere), i, "Color of interaction spheres (RGBA)");
 
 			Intensity = config.Bind(section, nameof(Intensity), 4f, "Intensity of colors");
 		}
