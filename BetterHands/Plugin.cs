@@ -1,6 +1,6 @@
 ﻿using BetterHands.Configs;
 using BetterHands.Patches;
-using Deli;
+using Deli.Setup;
 using FistVR;
 using HarmonyLib;
 using UnityEngine;
@@ -10,7 +10,7 @@ namespace BetterHands
 {
 	public class Plugin : DeliBehaviour
 	{
-		public string GUID => Info.Guid;
+		public readonly string GUID;
 		public readonly string HARMONY_GUID_HANDS;
 		public readonly string HARMONY_GUID_MAGPALM;
 		public readonly string HARMONY_GUID_CHEAT;
@@ -30,6 +30,7 @@ namespace BetterHands
 
 		public Plugin()
 		{
+			GUID = Info.Guid;
 			HARMONY_GUID_HANDS = GUID + ".hands";
 			HARMONY_GUID_MAGPALM = GUID + ".magpalm";
 			HARMONY_GUID_CHEAT = GUID + ".cheats";
@@ -37,7 +38,7 @@ namespace BetterHands
 			Instance = this;
 
 			Configs = new RootConfig(Config);
-			PatchInit(Configs);
+			PatchInit();
 
 			SceneManager.sceneLoaded += OnSceneLoaded;
 		}
@@ -54,7 +55,7 @@ namespace BetterHands
 		#region PatchInit
 
 		// Subscribes to config change events & inits harmony patches 
-		private void PatchInit(RootConfig config)
+		private void PatchInit()
 		{
 			Configs.MagPalm.Enable.SettingChanged += MagPalmEnable_SettingChanged;
 			Configs.MagPalm.Enable.SettingChanged += Cheat_SettingChanged;

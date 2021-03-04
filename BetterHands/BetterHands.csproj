@@ -7,9 +7,9 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <PackageReference Include="Deli" Version="0.3.0" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0" PrivateAssets="all" />
     <PackageReference Include="jnm2.ReferenceAssemblies.net35" Version="1.0.1" PrivateAssets="all" />
-    <PackageReference Include="Deli.Runtime" Version="0.2.5" />
   </ItemGroup>
   
   <ItemGroup>

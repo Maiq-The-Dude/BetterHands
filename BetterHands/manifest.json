@@ -1,15 +1,14 @@
 ﻿{
   "guid": "betterhands",
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "require": "0.3.0",
   "name": "BetterHands",
+  "description": "Recolor controller geo, resize interaction spheres, and add mag palming.",
+  "authors": [ "M'aiq" ],
   "sourceUrl": "https://github.com/Maiq-The-Dude/BetterHands/",
-  "authors": [
-    "M'aiq"
-  ],
-  "dependencies": {
-    "deli.core": "0.2.5"
-  },
-  "runtime": {
-    "BetterHands.dll": "assembly"
+  "assets": {
+    "setup": {
+      "BetterHands.dll": "deli:assembly"
+    }
   }
 }

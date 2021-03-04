@@ -173,6 +173,7 @@ namespace BetterHands.Patches
 			if (ObjInPalmSlot(__instance.m_quickbeltSlot, __instance))
 			{
 				__instance.m_isSpawnLock = false;
+				__instance.m_isHardnessed = false;
 			}
 		}
 
@@ -317,11 +318,11 @@ namespace BetterHands.Patches
 						var obj = qb[i].CurObject;
 						if (obj != null)
 						{
-							if (vel.magnitude > _configs.MagPalm.CollisionPreventionVelocity.Value)
+							if (vel.magnitude > _configs.MagPalm.CollisionPreventionVelocity.Value && obj.gameObject.layer != LayerMask.NameToLayer("NoCol"))
 							{
 								obj.SetAllCollidersToLayer(false, "NoCol");
 							}
-							else
+							else if (obj.gameObject.layer != LayerMask.NameToLayer("Default"))
 							{
 								obj.SetAllCollidersToLayer(false, "Default");
 							}
@@ -366,12 +367,12 @@ namespace BetterHands.Patches
 
 				if (input && GrabbityProtection(__instance, value))
 				{
-					MagPalmInput(__instance, input);
+					MagPalmInput(__instance);
 				}
 			}
 		}
 
-		private static void MagPalmInput(FVRViveHand hand, bool input)
+		private static void MagPalmInput(FVRViveHand hand)
 		{
 			// Get magpalm index here so quickbelt layout doesn't break retrieval mid-scene work
 			var qb = GM.CurrentPlayerBody.QuickbeltSlots;
@@ -380,9 +381,10 @@ namespace BetterHands.Patches
 				if (qb[i].name == hand.name)
 				{
 					var obj = qb[i].CurObject;
+					var item = (FVRPhysicalObject)hand.CurrentInteractable;
 
 					// If current hand is empty, retrieve the object
-					if (hand.m_state == FVRViveHand.HandState.Empty)
+					if (item == null)
 					{
 						if (obj != null)
 						{
@@ -391,9 +393,8 @@ namespace BetterHands.Patches
 					}
 
 					// else if palming something & not spawnlocked, swap the current hand and hand slot items
-					else if (AllowPalming(hand.CurrentInteractable))
+					else if (AllowPalming(item))
 					{
-						var item = hand.CurrentInteractable;
 						item.ForceBreakInteraction();
 						item.SetAllCollidersToLayer(false, "NoCol");
 
@@ -403,7 +404,7 @@ namespace BetterHands.Patches
 							hand.RetrieveObject(obj);
 						}
 
-						item.GetComponent<FVRPhysicalObject>().ForceObjectIntoInventorySlot(qb[i]);
+						item.ForceObjectIntoInventorySlot(qb[i]);
 						item.SetAllCollidersToLayer(false, "Default");
 
 						if (GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
@@ -433,10 +434,10 @@ namespace BetterHands.Patches
 		}
 
 		// Returns true if the held object is valid for palming
-		private static bool AllowPalming(FVRInteractiveObject item)
+		private static bool AllowPalming(FVRPhysicalObject item)
 		{
 			var cfg = _configs.zCheat;
-			if (item is FVRFireArmMagazine mag && mag.Size <= cfg.SizeLimit.Value || item is FVRFireArmClip || cfg.CursedPalms.Value)
+			if (item is FVRFireArmMagazine mag && mag.Size <= cfg.SizeLimit.Value || item is FVRFireArmClip || cfg.CursedPalms.Value && !item.m_isHardnessed)
 			{
 				return true;
 			}
