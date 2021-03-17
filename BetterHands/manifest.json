@@ -5,7 +5,7 @@
   "name": "BetterHands",
   "description": "Recolor controller geo, resize interaction spheres, and add mag palming.",
   "authors": [ "M'aiq" ],
-  "sourceUrl": "https://github.com/Maiq-The-Dude/BetterHands/",
+  "source_url": "https://github.com/Maiq-The-Dude/BetterHands/",
   "assets": {
     "setup": {
       "BetterHands.dll": "deli:assembly"
