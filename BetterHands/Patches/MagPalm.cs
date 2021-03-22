@@ -46,10 +46,8 @@ namespace BetterHands.Patches
 				else
 				{
 					// mirror configs for left hand
-					var rot = cfg.Rotation.Value;
-					var tilt = 90 - (rot.y - 90);
 					pose.localPosition = Vector3.Scale(cfg.Position.Value, new Vector3(-1, 1, 1));
-					pose.localRotation = Quaternion.Euler(rot.x, tilt, rot.z);
+					pose.localRotation = Quaternion.Euler(Vector3.Scale(cfg.Rotation.Value, new Vector3(1, -1, -1)));
 				}
 
 				// Create & config our copy
@@ -151,6 +149,24 @@ namespace BetterHands.Patches
 			return false;
 		}
 
+		// Allow palmed rounds to load into firearms
+		[HarmonyPatch(typeof(FVRFireArmRound), nameof(FVRFireArmRound.FVRFixedUpdate))]
+		[HarmonyPostfix]
+		private static void FVRFireArmRound_FVRFixedUpdate_Patch(FVRFireArmRound __instance)
+		{
+			var qbSlot = __instance.m_quickbeltSlot;
+			if (qbSlot != null && ObjInPalmSlot(qbSlot, __instance))
+			{
+				var chamber = __instance.HoveredOverChamber;
+				if (chamber != null && __instance.isManuallyChamberable && !chamber.IsFull && chamber.IsAccessible)
+				{
+					__instance.Chamber(chamber, true);
+					GetHandFromSlot(qbSlot).UpdateControllerDefinition();
+					UnityEngine.Object.Destroy(__instance.gameObject);
+				}
+			}
+		}
+
 		// Allow palmed mags to hit physical mag releases
 		[HarmonyPatch(typeof(PhysicalMagazineReleaseLatch), nameof(PhysicalMagazineReleaseLatch.OnCollisionEnter))]
 		[HarmonyPostfix]
@@ -209,6 +225,30 @@ namespace BetterHands.Patches
 				}
 			}
 		}
+
+
+		[HarmonyPatch(typeof(FVRPhysicalObject), nameof(FVRPhysicalObject.GetGrabPos))]
+		[HarmonyPrefix]
+		private static bool FVRPhysicalObject_GetGrabPos_Patch(FVRPhysicalObject __instance, ref Vector3 __result)
+		{
+			if (ObjInPalmSlot(__instance.QuickbeltSlot, __instance))
+			{
+				__result = __instance.PoseOverride.position;
+				return false;
+			}
+			return true;
+		}
+		[HarmonyPatch(typeof(FVRPhysicalObject), nameof(FVRPhysicalObject.GetGrabRot))]
+		[HarmonyPrefix]
+		private static bool FVRPhysicalObject_GetGrabRot_Patch(FVRPhysicalObject __instance, ref Quaternion __result)
+		{
+			if (ObjInPalmSlot(__instance.QuickbeltSlot, __instance))
+			{
+				__result = __instance.PoseOverride.rotation;
+				return false;
+			}
+			return true;
+		}
 		#endregion
 
 		#region Controller Geo Patches
@@ -243,6 +283,7 @@ namespace BetterHands.Patches
 		#endregion
 
 		#region MagPalm Slot Checks
+
 		// Is object in magpalm slot
 		private static bool ObjInPalmSlot(FVRQuickBeltSlot slot, FVRPhysicalObject obj)
 		{
@@ -297,6 +338,18 @@ namespace BetterHands.Patches
 			}
 
 			return false;
+		}
+
+		private static FVRViveHand GetHandFromSlot(FVRQuickBeltSlot slot)
+		{
+			var bod = GM.CurrentPlayerBody;
+			var hand = bod.RightHand.GetComponent<FVRViveHand>();
+			if (slot.name == bod.LeftHand.name)
+			{
+				hand = bod.LeftHand.GetComponent<FVRViveHand>();
+			}
+
+			return hand;
 		}
 		#endregion
 
@@ -404,6 +457,7 @@ namespace BetterHands.Patches
 							hand.RetrieveObject(obj);
 						}
 
+						//item.QBPoseOverride = item.PoseOverride;
 						item.ForceObjectIntoInventorySlot(qb[i]);
 						item.SetAllCollidersToLayer(false, "Default");
 
@@ -436,8 +490,8 @@ namespace BetterHands.Patches
 		// Returns true if the held object is valid for palming
 		private static bool AllowPalming(FVRPhysicalObject item)
 		{
-			var cfg = _configs.zCheat;
-			if (item is FVRFireArmMagazine mag && mag.Size <= cfg.SizeLimit.Value || item is FVRFireArmClip || cfg.CursedPalms.Value && !item.m_isHardnessed)
+			var cheatCfg = _configs.zCheat;
+			if (item is FVRFireArmMagazine mag && mag.Size <= cheatCfg.SizeLimit.Value || item is FVRFireArmClip || (item is FVRFireArmRound && _configs.MagPalm.RoundPalm.Value) || cheatCfg.CursedPalms.Value && !item.m_isHardnessed)
 			{
 				return true;
 			}

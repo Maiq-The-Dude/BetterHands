@@ -6,6 +6,7 @@ namespace BetterHands.Configs
 	public class MagPalmConfig
 	{
 		public ConfigEntry<bool> Enable { get; }
+		public ConfigEntry<bool> RoundPalm { get; }
 		public ConfigEntry<bool> CollisionPrevention { get; }
 		public ConfigEntry<float> CollisionPreventionVelocity { get; }
 		public ConfigEntry<bool> EasyPalmLoading { get; }
@@ -15,16 +16,19 @@ namespace BetterHands.Configs
 
 		public MagPalmConfig(ConfigFile config, string section)
 		{
-			Enable = config.Bind(section + "..." + nameof(Enable), nameof(Enable), true, "Allow holding two magazines via palming");
+			Enable = config.Bind("." + section + " " + nameof(Enable), nameof(Enable), true, "Allow holding two magazines via palming");
 
-			CollisionPrevention = config.Bind(section + ".." + nameof(CollisionPrevention), nameof(CollisionPrevention), true, "Prevents physics issues & clanking by disabling palmed item collision while moving above CollisionPreventionVelocity. Only for smooth locomotion");
-			CollisionPreventionVelocity = config.Bind(section + ".." + nameof(CollisionPreventionVelocity), nameof(CollisionPreventionVelocity), 1.5f, "Threshold for CollisionPrevention to kick in for palmed items");
-			EasyPalmLoading = config.Bind(section + ".." + nameof(EasyPalmLoading), nameof(EasyPalmLoading), false, "Enables easy mag loading for only the palmed mag. Not necessary if Easy Mag Reloading is already turned on ingame");
+			EasyPalmLoading = config.Bind(section + " Options", nameof(EasyPalmLoading), false, "Enables easy mag loading for only the palmed mag. Not necessary if Easy Mag Reloading is already turned on ingame");
+			RoundPalm = config.Bind(section + " Options", nameof(RoundPalm), false, "Allow palming a single round in the mag palm slots. Primarily envisioned for double barrel use");
 
-			Position = config.Bind(section + ".." + nameof(Position), nameof(Position), new Vector3(0.035f, 0, 0.035f), "Position of the palmed item for the right hand. Mirrored for left hand");
-			Rotation = config.Bind(section + ".." + nameof(Rotation), nameof(Rotation), new Vector3(90f, 85f, 90f), "Rotation of the palmed item for the right hand. Mirrored for left hand");
+			CollisionPrevention = config.Bind(section + " Options", nameof(CollisionPrevention), true, "Prevents physics issues & clanking by disabling palmed item collision while moving above CollisionPreventionVelocity. Only for smooth locomotion");
+			CollisionPreventionVelocity = config.Bind(section + " Options", nameof(CollisionPreventionVelocity), 1.5f, "Threshold for CollisionPrevention to kick in for palmed items");
 
-			Controls = new MagPalmControlsConfig(config, nameof(Controls));
+
+			Position = config.Bind(section + " Position & Rotation", nameof(Position), new Vector3(0.04f, 0, 0), "Position. X is Outward/Inward, Y is Rearward/Forward, Z is Up/Down");
+			Rotation = config.Bind(section + " Position & Rotation", nameof(Rotation), Vector3.zero, "Rotation. X is Forward/Rearward tilt, Y is Outward/Inward tilt, Z is Spin");
+
+			Controls = new MagPalmControlsConfig(config, section + " " + nameof(Controls));
 		}
 	}
 }

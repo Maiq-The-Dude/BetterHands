@@ -3,8 +3,8 @@ using BetterHands.Patches;
 using Deli.Setup;
 using FistVR;
 using HarmonyLib;
+using System.Linq;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace BetterHands
 {
@@ -39,11 +39,9 @@ namespace BetterHands
 
 			Configs = new RootConfig(Config);
 			PatchInit();
-
-			SceneManager.sceneLoaded += OnSceneLoaded;
 		}
 
-		private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+		private void OnLevelWasLoaded(int index)
 		{
 			PlayerBody = GM.CurrentPlayerBody;
 			RightHand = PlayerBody.RightHand;
@@ -130,15 +128,9 @@ namespace BetterHands
 				hand.Display_Controller_WMR
 			};
 
-			foreach (var geo in controllerGeos)
-			{
-				if (geo.activeSelf)
-				{
-					return geo;
-				}
-			}
+			var geo = controllerGeos.FirstOrDefault(g => g.activeSelf);
 
-			return hand.Display_Controller;
+			return geo == null ? hand.Display_Controller : geo;
 		}
 		#endregion
 	}

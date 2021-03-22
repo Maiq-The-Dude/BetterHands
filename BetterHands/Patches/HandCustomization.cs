@@ -24,11 +24,11 @@ namespace BetterHands.Patches
 			var hand = fvrhand.transform;
 
 			// Set the idle sphere to our color
-			var cfg = _configs.Color;
+			var cfg = _configs.Customization;
 			fvrhand.TouchSphereMat_NoInteractable.SetColor(COLOR_PROPERTY, Recolor(cfg.InteractSphere, cfg.Intensity.Value));
 
 			// Resize interaction spheres & colliders
-			var scale = new float[] { _configs.FingerSize.Value, _configs.PalmSize.Value };
+			var scale = new float[] { cfg.FingerSize.Value, cfg.PalmSize.Value };
 			SphereCollider[] collider = hand.GetComponents<SphereCollider>();
 			Transform[] vis = new Transform[]
 			{
@@ -49,7 +49,7 @@ namespace BetterHands.Patches
 		// Color the hands various geo children
 		private static void ColorHandRecursive(GameObject obj)
 		{
-			var cfg = _configs.Color;
+			var cfg = _configs.Customization;
 			var intensity = cfg.Intensity.Value;
 			if (null == obj)
 			{
