@@ -1,6 +1,7 @@
 ﻿using BetterHands.Configs;
 using FistVR;
 using HarmonyLib;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BetterHands.Patches
@@ -8,9 +9,10 @@ namespace BetterHands.Patches
 	internal class MagPalmPatches
 	{
 		private static RootConfig _configs => Plugin.Instance.Configs;
-		private static FVRPlayerBody _playerBody => Plugin.Instance.PlayerBody;
-		private static Transform _rightHand => Plugin.Instance.RightHand;
-		private static Transform _leftHand => Plugin.Instance.LeftHand;
+
+		private static readonly int[] _handSlots = new int[2];
+
+		private static List<FVRQuickBeltSlot> _qbList;
 
 		#region MagPalm Creation Patch
 
@@ -21,6 +23,8 @@ namespace BetterHands.Patches
 		{
 			ConfigMagPalming(__instance.RightHand);
 			ConfigMagPalming(__instance.LeftHand);
+
+			_qbList = GM.CurrentPlayerBody.QuickbeltSlots;
 		}
 
 		private static void ConfigMagPalming(Transform hand)
@@ -38,6 +42,7 @@ namespace BetterHands.Patches
 				var pose = new GameObject().transform;
 				pose.parent = fvrhand.PoseOverride;
 
+				var isRightHand = true;
 				if (fvrhand.IsThisTheRightHand)
 				{
 					pose.localPosition = cfg.Position.Value;
@@ -45,6 +50,7 @@ namespace BetterHands.Patches
 				}
 				else
 				{
+					isRightHand = false;
 					// mirror configs for left hand
 					pose.localPosition = Vector3.Scale(cfg.Position.Value, new Vector3(-1, 1, 1));
 					pose.localRotation = Quaternion.Euler(Vector3.Scale(cfg.Rotation.Value, new Vector3(1, -1, -1)));
@@ -70,6 +76,15 @@ namespace BetterHands.Patches
 				}
 
 				qb.Add(newSlotQB);
+				if (isRightHand)
+				{
+					_handSlots[0] = qb.Count - 1;
+				}
+				else
+				{
+					_handSlots[1] = qb.Count - 1;
+				}
+
 			}
 		}
 		#endregion
@@ -136,8 +151,7 @@ namespace BetterHands.Patches
 					fvrObj = clip;
 				}
 
-				var bod = GM.CurrentPlayerBody;
-				if (fvrObj != null && fvrObj.QuickbeltSlot != null && ((fvrObj.QuickbeltSlot.name == bod.RightHand.name || fvrObj.QuickbeltSlot.name == bod.LeftHand.name)))
+				if (fvrObj != null && fvrObj.QuickbeltSlot != null && (fvrObj.QuickbeltSlot == _qbList[_handSlots[0]] || fvrObj.QuickbeltSlot == _qbList[_handSlots[1]]))
 				{
 					if (col.gameObject.CompareTag(layer))
 					{
@@ -155,7 +169,7 @@ namespace BetterHands.Patches
 		private static void FVRFireArmRound_FVRFixedUpdate_Patch(FVRFireArmRound __instance)
 		{
 			var qbSlot = __instance.m_quickbeltSlot;
-			if (qbSlot != null && ObjInPalmSlot(qbSlot, __instance))
+			if (ObjInPalmSlot(qbSlot))
 			{
 				var chamber = __instance.HoveredOverChamber;
 				if (chamber != null && __instance.isManuallyChamberable && !chamber.IsFull && chamber.IsAccessible)
@@ -172,11 +186,13 @@ namespace BetterHands.Patches
 		[HarmonyPostfix]
 		private static void PhysicalMagRelease_Patch(PhysicalMagazineReleaseLatch __instance, Collision col)
 		{
-			if (col.collider.attachedRigidbody != null && col.collider.attachedRigidbody.gameObject.GetComponent<FVRPhysicalObject>() != null)
+			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && _configs.MagPalm.Enable.Value)
 			{
-				if (PalmSlotExists())
+				if (col.collider.attachedRigidbody != null && col.collider.attachedRigidbody.gameObject.GetComponent<FVRPhysicalObject>() != null)
 				{
+
 					__instance.timeSinceLastCollision = 0f;
+
 				}
 			}
 		}
@@ -186,7 +202,7 @@ namespace BetterHands.Patches
 		[HarmonyPostfix]
 		private static void ToggleQuickbeltState_Patch(FVRPhysicalObject __instance)
 		{
-			if (ObjInPalmSlot(__instance.m_quickbeltSlot, __instance))
+			if (ObjInPalmSlot(__instance.m_quickbeltSlot))
 			{
 				__instance.m_isSpawnLock = false;
 				__instance.m_isHardnessed = false;
@@ -199,7 +215,7 @@ namespace BetterHands.Patches
 		private static void FVRFireArmMagazine_FVRFixedUpdate_Patch(FVRFireArmMagazine __instance)
 		{
 			var qbSlot = __instance.QuickbeltSlot;
-			if ((GM.Options.ControlOptions.UseEasyMagLoading || _configs.MagPalm.EasyPalmLoading.Value) && ObjInPalmSlot(qbSlot, __instance))
+			if ((GM.Options.ControlOptions.UseEasyMagLoading || _configs.MagPalm.EasyPalmLoading.Value) && ObjInPalmSlot(qbSlot))
 			{
 				var bod = GM.CurrentPlayerBody;
 				var hand = bod.RightHand.GetComponent<FVRViveHand>();
@@ -225,24 +241,111 @@ namespace BetterHands.Patches
 				}
 			}
 		}
+		#endregion
 
+		#region MagPalm Goofy Patches
+
+		[HarmonyPatch(typeof(FVRFireArm), nameof(FVRFireArm.Fire))]
+		[HarmonyPostfix]
+		private static void Handgun_Fire_Patch(FVRFireArm __instance)
+		{
+			var obj = MirrorGunChecks(__instance);
+			if (obj != null && obj is Handgun handgun)
+			{
+				handgun.Fire();
+			}
+			else if (obj != null && obj is ClosedBoltWeapon cbGun)
+			{
+				cbGun.Fire();
+			}
+			else if (obj != null && obj is OpenBoltReceiver obGun)
+			{
+				obGun.Fire();
+			}
+		}
+
+		[HarmonyPatch(typeof(FVRFireArm), nameof(FVRFireArm.EjectMag))]
+		[HarmonyPostfix]
+		private static void FVRFireArm_EjectMag_Patch(FVRFireArm __instance)
+		{
+			var obj = MirrorGunChecks(__instance);
+			if (obj != null && obj is Handgun handgun)
+			{
+				if (handgun.HasMagReleaseInput)
+				{
+					handgun.ReleaseMag();
+				}
+			}
+			else if (obj != null && obj is ClosedBoltWeapon cbGun)
+			{
+				if (cbGun.HasMagReleaseButton)
+				{
+					cbGun.ReleaseMag();
+				}
+			}
+			else if (obj != null && obj is OpenBoltReceiver obGun)
+			{
+				if (obGun.HasMagReleaseButton)
+				{
+					obGun.ReleaseMag();
+				}
+			}
+		}
+
+		[HarmonyPatch(typeof(Handgun), nameof(Handgun.DropSlideRelease))]
+		[HarmonyPostfix]
+		private static void Handgun_EngageSlideRelease_Patch(Handgun __instance)
+		{
+			var obj = MirrorGunChecks(__instance);
+			if (obj != null && obj is Handgun handgun)
+			{
+				handgun.DropSlideRelease();
+			}
+		}
+
+		private static FVRFireArm MirrorGunChecks(FVRFireArm gun)
+		{
+			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && _configs.zCheat.CursedPalms.Value)
+			{
+				if (gun.m_hand != null)
+				{
+					var slot = _qbList[_handSlots[0]];
+					if (!gun.m_hand.IsThisTheRightHand)
+					{
+						slot = _qbList[_handSlots[1]];
+					}
+
+					var obj = slot.CurObject;
+					if (obj != null && obj is FVRFireArm fvrGun)
+					{
+						return fvrGun;
+					}
+				}
+			}
+
+			return null;
+		}
+		#endregion
+
+		#region Pose Override Patches
 
 		[HarmonyPatch(typeof(FVRPhysicalObject), nameof(FVRPhysicalObject.GetGrabPos))]
 		[HarmonyPrefix]
 		private static bool FVRPhysicalObject_GetGrabPos_Patch(FVRPhysicalObject __instance, ref Vector3 __result)
 		{
-			if (ObjInPalmSlot(__instance.QuickbeltSlot, __instance))
+			if (ObjInPalmSlot(__instance.QuickbeltSlot))
 			{
 				__result = __instance.PoseOverride.position;
 				return false;
 			}
 			return true;
 		}
+
 		[HarmonyPatch(typeof(FVRPhysicalObject), nameof(FVRPhysicalObject.GetGrabRot))]
 		[HarmonyPrefix]
 		private static bool FVRPhysicalObject_GetGrabRot_Patch(FVRPhysicalObject __instance, ref Quaternion __result)
 		{
-			if (ObjInPalmSlot(__instance.QuickbeltSlot, __instance))
+			if (ObjInPalmSlot(__instance.QuickbeltSlot))
 			{
 				__result = __instance.PoseOverride.rotation;
 				return false;
@@ -260,7 +363,7 @@ namespace BetterHands.Patches
 		{
 			if (GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
 			{
-				if (ObjInPalmSlot(__instance, null))
+				if (IsSpecificPalmSlotEmpty(__instance))
 				{
 					__instance.UpdateControllerDefinition();
 				}
@@ -274,116 +377,16 @@ namespace BetterHands.Patches
 		{
 			if (GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
 			{
-				if (ObjInPalmSlot(__instance.m_hand.OtherHand, null))
+				var otherHand = __instance.m_hand.OtherHand;
+				if (IsSpecificPalmSlotEmpty(otherHand))
 				{
-					__instance.m_hand.OtherHand.UpdateControllerDefinition();
+					otherHand.UpdateControllerDefinition();
 				}
 			}
-		}
-		#endregion
-
-		#region MagPalm Slot Checks
-
-		// Is object in magpalm slot
-		private static bool ObjInPalmSlot(FVRQuickBeltSlot slot, FVRPhysicalObject obj)
-		{
-			if (slot != null)
-			{
-				var bod = GM.CurrentPlayerBody;
-				var hand = bod.RightHand.GetComponent<FVRViveHand>();
-				if (slot.name == bod.LeftHand.name)
-				{
-					hand = bod.LeftHand.GetComponent<FVRViveHand>();
-				}
-
-				return ObjInPalmSlot(hand, obj);
-			}
-
-			return false;
-		}
-
-		private static bool ObjInPalmSlot(FVRViveHand hand, FVRPhysicalObject obj)
-		{
-			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && hand != null)
-			{
-				var bod = GM.CurrentPlayerBody;
-				var qb = bod.QuickbeltSlots;
-				for (var i = 0; i < qb.Count; i++)
-				{
-					if ((qb[i].name == hand.name) && qb[i].CurObject == obj)
-					{
-						return true;
-					}
-				}
-			}
-
-			return false;
-		}
-
-		private static bool PalmSlotExists()
-		{
-			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled)
-			{
-				var bod = GM.CurrentPlayerBody;
-				var qb = bod.QuickbeltSlots;
-				var left = bod.LeftHand;
-				var right = bod.RightHand;
-				for (var i = 0; i < qb.Count; i++)
-				{
-					if ((qb[i].name == left.name || qb[i].name == right.name))
-					{
-						return true;
-					}
-				}
-			}
-
-			return false;
-		}
-
-		private static FVRViveHand GetHandFromSlot(FVRQuickBeltSlot slot)
-		{
-			var bod = GM.CurrentPlayerBody;
-			var hand = bod.RightHand.GetComponent<FVRViveHand>();
-			if (slot.name == bod.LeftHand.name)
-			{
-				hand = bod.LeftHand.GetComponent<FVRViveHand>();
-			}
-
-			return hand;
 		}
 		#endregion
 
 		#region Input Patches
-
-		// CollisionPrevention patch
-		[HarmonyPatch(typeof(FVRMovementManager), nameof(FVRMovementManager.FU))]
-		[HarmonyPostfix]
-		private static void FVRMovementManager_FU_Patch(FVRMovementManager __instance)
-		{
-			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && _configs.MagPalm.CollisionPrevention.Value)
-			{
-				var vel = __instance.m_armSwingerVelocity + __instance.m_twoAxisVelocity;
-				var qb = _playerBody.QuickbeltSlots;
-				for (var i = 0; i < qb.Count; i++)
-				{
-					if ((qb[i].name == _leftHand.name || qb[i].name == _rightHand.name))
-					{
-						var obj = qb[i].CurObject;
-						if (obj != null)
-						{
-							if (vel.magnitude > _configs.MagPalm.CollisionPreventionVelocity.Value && obj.gameObject.layer != LayerMask.NameToLayer("NoCol"))
-							{
-								obj.SetAllCollidersToLayer(false, "NoCol");
-							}
-							else if (obj.gameObject.layer != LayerMask.NameToLayer("Default"))
-							{
-								obj.SetAllCollidersToLayer(false, "Default");
-							}
-						}
-					}
-				}
-			}
-		}
 
 		// Input hook
 		[HarmonyPatch(typeof(FVRViveHand), nameof(FVRViveHand.Update))]
@@ -428,47 +431,44 @@ namespace BetterHands.Patches
 		private static void MagPalmInput(FVRViveHand hand)
 		{
 			// Get magpalm index here so quickbelt layout doesn't break retrieval mid-scene work
-			var qb = GM.CurrentPlayerBody.QuickbeltSlots;
-			for (var i = 0; i < qb.Count; i++)
+			var slot = _qbList[_handSlots[0]];
+
+			if (hand.transform == GM.CurrentPlayerBody.LeftHand)
 			{
-				if (qb[i].name == hand.name)
+				slot = _qbList[_handSlots[1]];
+			}
+
+			var obj = slot.CurObject;
+			var item = (FVRPhysicalObject)hand.CurrentInteractable;
+
+			// If current hand is empty, retrieve the object
+			if (item == null && obj != null)
+			{
+				hand.RetrieveObject(obj);
+			}
+
+			// else if palming something & not spawnlocked, swap the current hand and hand slot items
+			else if (AllowPalming(item))
+			{
+				item.ForceBreakInteraction();
+				item.SetAllCollidersToLayer(false, "NoCol");
+
+				if (obj != null)
 				{
-					var obj = qb[i].CurObject;
-					var item = (FVRPhysicalObject)hand.CurrentInteractable;
+					item.transform.position = obj.transform.position;
+					hand.RetrieveObject(obj);
+				}
 
-					// If current hand is empty, retrieve the object
-					if (item == null)
-					{
-						if (obj != null)
-						{
-							hand.RetrieveObject(obj);
-						}
-					}
+				//item.QBPoseOverride = item.PoseOverride;
+				item.ForceObjectIntoInventorySlot(slot);
+				item.SetAllCollidersToLayer(false, "Default");
 
-					// else if palming something & not spawnlocked, swap the current hand and hand slot items
-					else if (AllowPalming(item))
-					{
-						item.ForceBreakInteraction();
-						item.SetAllCollidersToLayer(false, "NoCol");
-
-						if (obj != null)
-						{
-							item.transform.position = obj.transform.position;
-							hand.RetrieveObject(obj);
-						}
-
-						//item.QBPoseOverride = item.PoseOverride;
-						item.ForceObjectIntoInventorySlot(qb[i]);
-						item.SetAllCollidersToLayer(false, "Default");
-
-						if (GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
-						{
-							Plugin.GetControllerFrom(hand).SetActive(false);
-						}
-					}
-					break;
+				if (GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
+				{
+					Plugin.GetControllerFrom(hand).SetActive(false);
 				}
 			}
+
 		}
 
 		// If mag palm keybind matches grabbity keybind, suppress mag palm input if grabbity sphere is on an item
@@ -491,12 +491,119 @@ namespace BetterHands.Patches
 		private static bool AllowPalming(FVRPhysicalObject item)
 		{
 			var cheatCfg = _configs.zCheat;
-			if (item is FVRFireArmMagazine mag && mag.Size <= cheatCfg.SizeLimit.Value || item is FVRFireArmClip || (item is FVRFireArmRound && _configs.MagPalm.RoundPalm.Value) || cheatCfg.CursedPalms.Value && !item.m_isHardnessed)
+			if (item != null)
+			{
+				if (item is FVRFireArmMagazine mag && mag.Size <= cheatCfg.SizeLimit.Value || item is FVRFireArmClip || (item is FVRFireArmRound && _configs.MagPalm.RoundPalm.Value) || cheatCfg.CursedPalms.Value && !item.m_isHardnessed)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		// CollisionPrevention patch
+		[HarmonyPatch(typeof(FVRMovementManager), nameof(FVRMovementManager.FU))]
+		[HarmonyPostfix]
+		private static void FVRMovementManager_FU_Patch(FVRMovementManager __instance)
+		{
+			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && _configs.MagPalm.CollisionPrevention.Value)
+			{
+				var vel = __instance.m_armSwingerVelocity + __instance.m_twoAxisVelocity;
+				var speedlim = _configs.MagPalm.CollisionPreventionVelocity.Value;
+				for (var i = 0; i < _handSlots.Length; i++)
+				{
+					var obj = _qbList[_handSlots[i]].CurObject;
+
+					if (obj != null)
+					{
+						// Look for first nontrigger collider and use that for comparison
+						foreach (var col in obj.m_colliders)
+						{
+							if (!col.isTrigger)
+							{
+								if (vel.magnitude >= speedlim && col.gameObject.layer != LayerMask.NameToLayer("NoCol"))
+								{
+									obj.SetAllCollidersToLayer(false, "NoCol");
+									break;
+								}
+								else if (vel.magnitude < speedlim && col.gameObject.layer != LayerMask.NameToLayer("Default"))
+								{
+									obj.SetAllCollidersToLayer(false, "Default");
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		#endregion
+
+		#region MagPalm Slot Checks
+
+		// Is object in any magpalm slot
+		private static bool ObjInPalmSlot(FVRQuickBeltSlot slot)
+		{
+			if (slot != null && (slot == _qbList[_handSlots[0]] || slot == _qbList[_handSlots[1]]))
 			{
 				return true;
 			}
 
 			return false;
+		}
+
+		// Is object in specific magpalm slot
+		private static bool ObjInSpecificPalmSlot(FVRViveHand hand, FVRPhysicalObject obj)
+		{
+			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && hand != null && obj != null)
+			{
+				var objQB = obj.QuickbeltSlot;
+
+				var qbSlot = _qbList[_handSlots[0]];
+				if (hand.IsThisTheRightHand)
+				{
+					qbSlot = _qbList[_handSlots[1]];
+				}
+
+				if (objQB != null && objQB == qbSlot)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		private static bool IsSpecificPalmSlotEmpty(FVRViveHand hand)
+		{
+			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && hand != null)
+			{
+				var qbSlot = _qbList[_handSlots[0]];
+				if (!hand.IsThisTheRightHand)
+				{
+					qbSlot = _qbList[_handSlots[1]];
+				}
+
+				if (qbSlot.CurObject == null)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		private static FVRViveHand GetHandFromSlot(FVRQuickBeltSlot slot)
+		{
+			var bod = GM.CurrentPlayerBody;
+			var hand = bod.RightHand.GetComponent<FVRViveHand>();
+			if (slot == _qbList[_handSlots[1]])
+			{
+				hand = bod.LeftHand.GetComponent<FVRViveHand>();
+			}
+
+			return hand;
 		}
 		#endregion
 	}

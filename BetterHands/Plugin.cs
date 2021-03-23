@@ -17,10 +17,6 @@ namespace BetterHands
 
 		public static Plugin Instance { get; private set; }
 
-		public FVRPlayerBody PlayerBody;
-		public Transform RightHand;
-		public Transform LeftHand;
-
 		public RootConfig Configs { get; }
 
 		// Harmony patchers
@@ -43,10 +39,6 @@ namespace BetterHands
 
 		private void OnLevelWasLoaded(int index)
 		{
-			PlayerBody = GM.CurrentPlayerBody;
-			RightHand = PlayerBody.RightHand;
-			LeftHand = PlayerBody.LeftHand;
-
 			Config.Reload();
 		}
 
