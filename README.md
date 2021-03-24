@@ -9,11 +9,14 @@ Mag palming allows you to carry two small sized magazines in one hand. To do thi
 
 ### Mag Palming Configs
 - Change mag palm pose position and rotation
-- Change click pressure required to mag palm
-- Change priority of Grabbity Gloves vs mag palming
+- Change click pressure required to mag palm when using touchpad click keybinds
+- Change priority of Grabbity Gloves vs mag palming when Grabbity and mag palming share the same input
+- `Interactable` allows palmed items to be directly grabbed by the other hand
+- `CollisionPrevention` to alleviate physics clanking by disabling palmed item collision above a set velocity
+- `EasyPalmLoading` to enable Easy Mag Loading on only the palmed item. Not necessary if Easy Mag Loading is enabled via the ingame options panel already
 - Change palmable mag size limit. **Greater than `Medium` will disable TNH score submission**
-- Toggle `CursedPalms` which allows any interactive object to be palmed. Use at your own risk, bugs stemming from this will rarely be investigated. **Disables TNH score submission**
-- Toggle `Interactable` which allows palmed items to be directly grabbed by the other hand
+- `CursedPalms` allows any interactive object to be palmed. Use at your own risk, bugs stemming from this will rarely be investigated. **Disables TNH score submission**
+- `MirroredGuns` to fire a gun in the hand and palm slot at once. Requires `CursedPalms`
 - Rebind mag palm key
   - AX/BY buttons
   - Grip
@@ -25,10 +28,11 @@ Mag palming allows you to carry two small sized magazines in one hand. To do thi
 ## Hand Customization
 - Recolor controller geo
 - Recolor interaction spheres
-- Resize individual interaction spheres
+- Resize individual interaction area radius
+- Resize individual interaction visual spheres
 
 ## Installation
-Requires [BepInEx 5.4](https://github.com/BepInEx/BepInEx/releases/latest) and [Deli 0.3.x](https://github.com/Deli-Collective/Deli/releases).
+Requires [BepInEx 5.4.x](https://github.com/BepInEx/BepInEx/releases/latest) and [Deli 0.3.x](https://github.com/Deli-Collective/Deli/releases).
 
 Download the [latest release of BetterHands](https://github.com/Maiq-The-Dude/BetterHands/releases/latest) and place `betterhands.deli` into `h3vr/deli/mods` folder.
 
