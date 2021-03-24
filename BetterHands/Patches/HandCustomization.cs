@@ -39,8 +39,11 @@ namespace BetterHands.Patches
 			{
 				collider[i].radius = collider[i].radius * scale[i];
 
-				var visScale = vis[i].localScale.x * scale[i];
-				vis[i].localScale = new Vector3(visScale, visScale, visScale);
+				if (cfg.Scale.Value)
+				{
+					var visScale = vis[i].localScale.x * scale[i];
+					vis[i].localScale = new Vector3(visScale, visScale, visScale);
+				}
 			}
 
 			ColorHandRecursive(Plugin.GetControllerFrom(fvrhand));

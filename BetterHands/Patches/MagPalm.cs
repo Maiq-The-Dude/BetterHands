@@ -103,12 +103,24 @@ namespace BetterHands.Patches
 				var firearm = triggerWell.FireArm;
 				if (mag.MagazineType == triggerWell.TypeOverride || mag.MagazineType == firearm.MagazineType && (firearm.EjectDelay <= 0f || mag != firearm.LastEjectedMag) && firearm.Magazine == null)
 				{
-					// Remove from qb, load, buzz loading hand, and unhide controller geo
+					// in case firearm is in a qb slot
+					var slot = mag.QuickbeltSlot;
+
+					// Remove mag from qb, load, buzz loading hand, and unhide controller geo
 					mag.m_isSpawnLock = false;
 					mag.SetQuickBeltSlot(null);
 					mag.Load(firearm);
-					mag.FireArm.m_hand.OtherHand.Buzz(mag.FireArm.m_hand.Buzzer.Buzz_BeginInteraction);
-					mag.FireArm.m_hand.OtherHand.UpdateControllerDefinition();
+					if (firearm.QuickbeltSlot != null)
+					{
+						var hand = GetHandFromSlot(slot);
+						hand.Buzz(hand.OtherHand.Buzzer.Buzz_BeginInteraction);
+						hand.UpdateControllerDefinition();
+					}
+					else
+					{
+						mag.FireArm.m_hand.OtherHand.Buzz(mag.FireArm.m_hand.Buzzer.Buzz_BeginInteraction);
+						mag.FireArm.m_hand.OtherHand.UpdateControllerDefinition();
+					}
 				}
 			}
 		}
@@ -243,88 +255,96 @@ namespace BetterHands.Patches
 		}
 		#endregion
 
-		#region MagPalm Goofy Patches
+		#region MagPalm Mirror Patches
 
+		// Generic fire
 		[HarmonyPatch(typeof(FVRFireArm), nameof(FVRFireArm.Fire))]
 		[HarmonyPostfix]
-		private static void Handgun_Fire_Patch(FVRFireArm __instance)
+		private static void FVRFireArm_Fire_Patch(FVRFireArm __instance)
 		{
 			var obj = MirrorGunChecks(__instance);
-			if (obj != null && obj is Handgun handgun)
+			if (obj != null)
 			{
-				handgun.Fire();
-			}
-			else if (obj != null && obj is ClosedBoltWeapon cbGun)
-			{
-				cbGun.Fire();
-			}
-			else if (obj != null && obj is OpenBoltReceiver obGun)
-			{
-				obGun.Fire();
+				if (obj is Handgun handgun)
+				{
+					handgun.Fire();
+				}
+				else if (obj is ClosedBoltWeapon closedBoltWeapon)
+				{
+					closedBoltWeapon.Fire();
+					closedBoltWeapon.Bolt.m_isBoltLocked = false;
+				}
+				else if (obj is SimpleLauncher simpleLauncher)
+				{
+					simpleLauncher.Fire();
+				}
 			}
 		}
 
+		// Generic mag releases
 		[HarmonyPatch(typeof(FVRFireArm), nameof(FVRFireArm.EjectMag))]
 		[HarmonyPostfix]
 		private static void FVRFireArm_EjectMag_Patch(FVRFireArm __instance)
 		{
 			var obj = MirrorGunChecks(__instance);
-			if (obj != null && obj is Handgun handgun)
+			if (obj != null)
 			{
-				if (handgun.HasMagReleaseInput)
+				if (obj is Handgun handgun && handgun.HasMagReleaseInput)
 				{
 					handgun.ReleaseMag();
 				}
-			}
-			else if (obj != null && obj is ClosedBoltWeapon cbGun)
-			{
-				if (cbGun.HasMagReleaseButton)
+				else if (obj is ClosedBoltWeapon closedBoltWeapon && closedBoltWeapon.HasMagReleaseButton)
 				{
-					cbGun.ReleaseMag();
-				}
-			}
-			else if (obj != null && obj is OpenBoltReceiver obGun)
-			{
-				if (obGun.HasMagReleaseButton)
-				{
-					obGun.ReleaseMag();
+					closedBoltWeapon.ReleaseMag();
 				}
 			}
 		}
 
+		// Mirrored guns are always two hand stabilized
+		[HarmonyPatch(typeof(FVRFireArm), nameof(FVRFireArm.IsTwoHandStabilized))]
+		[HarmonyPrefix]
+		private static bool FVRFireArm_IsForegripStabilized_Patch(FVRFireArm __instance, ref bool __result)
+		{
+			var cfg = _configs.zCheat;
+			if (cfg.CursedPalms.Value && cfg.MirroredGuns.Value)
+			{
+				var qbSlot = __instance.QuickbeltSlot;
+
+				// Held gun, stabilize if palmed gun exists
+				if (qbSlot == null)
+				{
+					var obj = MirrorGunChecks(__instance);
+					if (obj != null)
+					{
+						__result = true;
+						return false;
+					}
+				}
+
+				// Palmed gun, always stabilize
+				else if (qbSlot == _qbList[_handSlots[0]] || qbSlot == _qbList[_handSlots[1]])
+				{
+					__result = true;
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		// Handgun slide release
 		[HarmonyPatch(typeof(Handgun), nameof(Handgun.DropSlideRelease))]
-		[HarmonyPostfix]
-		private static void Handgun_EngageSlideRelease_Patch(Handgun __instance)
+		[HarmonyPrefix]
+		private static bool Handgun_EngageSlideRelease_Patch(Handgun __instance)
 		{
 			var obj = MirrorGunChecks(__instance);
-			if (obj != null && obj is Handgun handgun)
+			if (obj != null && obj is Handgun handgun && __instance.IsSlideLockUp)
 			{
 				handgun.DropSlideRelease();
 			}
+			return true;
 		}
 
-		private static FVRFireArm MirrorGunChecks(FVRFireArm gun)
-		{
-			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && _configs.zCheat.CursedPalms.Value)
-			{
-				if (gun.m_hand != null)
-				{
-					var slot = _qbList[_handSlots[0]];
-					if (!gun.m_hand.IsThisTheRightHand)
-					{
-						slot = _qbList[_handSlots[1]];
-					}
-
-					var obj = slot.CurObject;
-					if (obj != null && obj is FVRFireArm fvrGun)
-					{
-						return fvrGun;
-					}
-				}
-			}
-
-			return null;
-		}
 		#endregion
 
 		#region Pose Override Patches
@@ -439,16 +459,16 @@ namespace BetterHands.Patches
 			}
 
 			var obj = slot.CurObject;
-			var item = (FVRPhysicalObject)hand.CurrentInteractable;
+			var currItem = hand.CurrentInteractable;
 
 			// If current hand is empty, retrieve the object
-			if (item == null && obj != null)
+			if (currItem == null && obj != null)
 			{
 				hand.RetrieveObject(obj);
 			}
 
-			// else if palming something & not spawnlocked, swap the current hand and hand slot items
-			else if (AllowPalming(item))
+			// else if palming something & not harnessed, swap the current hand and hand slot items
+			else if (currItem is FVRPhysicalObject item && AllowPalming(item))
 			{
 				item.ForceBreakInteraction();
 				item.SetAllCollidersToLayer(false, "NoCol");
@@ -468,7 +488,6 @@ namespace BetterHands.Patches
 					Plugin.GetControllerFrom(hand).SetActive(false);
 				}
 			}
-
 		}
 
 		// If mag palm keybind matches grabbity keybind, suppress mag palm input if grabbity sphere is on an item
@@ -604,6 +623,31 @@ namespace BetterHands.Patches
 			}
 
 			return hand;
+		}
+
+		// Generic checks to see if there is a gun in the relevant handslot
+		private static FVRFireArm MirrorGunChecks(FVRFireArm gun)
+		{
+			var cfg = _configs.zCheat;
+			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && cfg.CursedPalms.Value && cfg.MirroredGuns.Value)
+			{
+				if (gun.m_hand != null)
+				{
+					var slot = _qbList[_handSlots[0]];
+					if (!gun.m_hand.IsThisTheRightHand)
+					{
+						slot = _qbList[_handSlots[1]];
+					}
+
+					var obj = slot.CurObject;
+					if (obj != null && obj is FVRFireArm fvrGun)
+					{
+						return fvrGun;
+					}
+				}
+			}
+
+			return null;
 		}
 		#endregion
 	}

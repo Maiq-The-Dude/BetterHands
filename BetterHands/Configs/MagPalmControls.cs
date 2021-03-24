@@ -32,7 +32,7 @@ namespace BetterHands.Configs
 
 		public MagPalmControlsConfig(ConfigFile config, string section)
 		{
-			ClickPressure = config.Bind(section, nameof(ClickPressure), 0.2f, "Amount of pressure needed for TouchpadClick keybinds");
+			ClickPressure = config.Bind(section, nameof(ClickPressure), 0.2f, "Pressure needed for TouchpadClick keybinds");
 			GrabbityProtection = config.Bind(section, nameof(GrabbityProtection), true, "If mag palm keybind matches grabbity keybind, prioritize grabbity input over mag palm");
 			Interactable = config.Bind(section, nameof(Interactable), false, "Allow grabbing items directly from palms with the other hand");
 

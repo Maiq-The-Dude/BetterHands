@@ -5,12 +5,13 @@ namespace BetterHands.Configs
 {
 	public class CustomizationConfig
 	{
-		public ConfigEntry<float> FingerSize { get; }
-		public ConfigEntry<float> PalmSize { get; }
 		public ConfigEntry<Vector4> MaterialA { get; }
 		public ConfigEntry<Vector4> MaterialB { get; }
 		public ConfigEntry<Vector4> InteractSphere { get; }
 		public ConfigEntry<float> Intensity { get; }
+		public ConfigEntry<float> FingerSize { get; }
+		public ConfigEntry<float> PalmSize { get; }
+		public ConfigEntry<bool> Scale { get; }
 
 		public CustomizationConfig(ConfigFile config, string section)
 		{
@@ -24,8 +25,9 @@ namespace BetterHands.Configs
 
 			Intensity = config.Bind(section + " Color", nameof(Intensity), 4f, "Intensity of colors");
 
-			FingerSize = config.Bind(section + " Interaction Sizes", nameof(FingerSize), 1f, "Scale of the finger interaction sphere");
-			PalmSize = config.Bind(section + " Interaction Sizes", nameof(PalmSize), 1f, "Scale of the palm interaction sphere");
+			FingerSize = config.Bind(section + " Interaction Sizes", nameof(FingerSize), 1f, "Scale the finger interaction radius");
+			PalmSize = config.Bind(section + " Interaction Sizes", nameof(PalmSize), 1f, "Scale the palm interaction radius");
+			Scale = config.Bind(section + " Interaction Sizes", nameof(Scale), true, "Visibly scale the interaction spheres to match their adjusted radius");
 		}
 	}
 }
