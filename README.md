@@ -2,7 +2,7 @@
 [![version](https://img.shields.io/github/v/release/Maiq-The-Dude/BetterHands?&label=version&style=flat-square)](https://github.com/Maiq-The-Dude/BetterHands/releases/latest) [![discord](https://img.shields.io/discord/777351065950879744?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2&style=flat-square)](https://discord.gg/g8xeFyt42j)
 
 Mod for H3VR to recolor controller geo, resize interaction spheres, and add mag palming.
-All features are optional and configured via `mods/configs/betterhands.cfg`. Configs can be edited mid-game, but will require a scene reload to take effect.
+All features are optional and configured via `h3vr/deli/configs/betterhands.cfg`. Configs can be edited mid-game, but will require a scene reload to take effect.
 
 ## Mag Palming
 Mag palming allows you to carry two small sized magazines in one hand. To do this click the trigger when holding a magazine in your hand.
@@ -28,9 +28,9 @@ Mag palming allows you to carry two small sized magazines in one hand. To do thi
 - Resize individual interaction spheres
 
 ## Installation
-Requires [BepInEx 5.4](https://github.com/BepInEx/BepInEx/releases/latest) and [Deli 0.2.5](https://github.com/Deli-Collective/Deli/releases/tag/v0.2.5).
+Requires [BepInEx 5.4](https://github.com/BepInEx/BepInEx/releases/latest) and [Deli 0.3.x](https://github.com/Deli-Collective/Deli/releases).
 
-Download the [latest release of BetterHands](https://github.com/Maiq-The-Dude/BetterHands/releases/latest) and place `betterhands.deli` into `h3vr/mods` folder.
+Download the [latest release of BetterHands](https://github.com/Maiq-The-Dude/BetterHands/releases/latest) and place `betterhands.deli` into `h3vr/deli/mods` folder.
 
 ## Uninstallation
-Delete `betterhands.deli` in the `h3vr/mods` folder and `betterhands.cfg` in the `h3vr/mods/configs` folder.
+Delete `betterhands.deli` in the `h3vr/deli/mods` folder and `betterhands.cfg` in the `h3vr/deli/configs` folder.
