@@ -194,7 +194,7 @@ namespace BetterHands.Patches
 		}
 
 		// Allow palmed mags to hit physical mag releases
-		[HarmonyPatch(typeof(PhysicalMagazineReleaseLatch), nameof(PhysicalMagazineReleaseLatch.OnCollisionEnter))]
+		[HarmonyPatch(typeof(PhysicalMagazineReleaseLatch), nameof(PhysicalMagazineReleaseLatch.OnCollisionStay))]
 		[HarmonyPostfix]
 		private static void PhysicalMagRelease_Patch(PhysicalMagazineReleaseLatch __instance, Collision col)
 		{
@@ -533,7 +533,6 @@ namespace BetterHands.Patches
 				for (var i = 0; i < _handSlots.Length; i++)
 				{
 					var obj = _qbList[_handSlots[i]].CurObject;
-
 					if (obj != null)
 					{
 						// Look for first nontrigger collider and use that for comparison
@@ -551,6 +550,8 @@ namespace BetterHands.Patches
 									obj.SetAllCollidersToLayer(false, "Default");
 									break;
 								}
+
+								break;
 							}
 						}
 					}
