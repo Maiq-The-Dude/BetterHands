@@ -303,7 +303,7 @@ namespace BetterHands.Patches
 		// Mirrored guns are always two hand stabilized
 		[HarmonyPatch(typeof(FVRFireArm), nameof(FVRFireArm.IsTwoHandStabilized))]
 		[HarmonyPrefix]
-		private static bool FVRFireArm_IsForegripStabilized_Patch(FVRFireArm __instance, ref bool __result)
+		private static bool FVRFireArm_IsTwoHandStabilized_Patch(FVRFireArm __instance, ref bool __result)
 		{
 			var cfg = _configs.zCheat;
 			if (cfg.CursedPalms.Value && cfg.MirroredGuns.Value)
