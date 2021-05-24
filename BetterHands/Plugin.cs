@@ -1,104 +1,90 @@
 ﻿using BetterHands.Configs;
-using BetterHands.Patches;
+using BetterHands.Hooks;
+using Deli.H3VR.Api;
 using Deli.Setup;
 using FistVR;
-using HarmonyLib;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace BetterHands
 {
 	public class Plugin : DeliBehaviour
 	{
-		public readonly string GUID;
-		public readonly string HARMONY_GUID_HANDS;
-		public readonly string HARMONY_GUID_MAGPALM;
-		public readonly string HARMONY_GUID_CHEAT;
+		private readonly H3Api _api = H3Api.Instance;
 
-		public static Plugin Instance { get; private set; }
+		private RootConfig _config;
 
-		public RootConfig Configs { get; }
-
-		// Harmony patchers
-		private Harmony _harmonyHands;
-		private Harmony _harmonyMagPalm;
-		private Harmony _harmonyCheat;
+		private HandCustomization _handCustomization;
+		private MagPalm _magPalm;
 
 		public Plugin()
 		{
-			GUID = Info.Guid;
-			HARMONY_GUID_HANDS = GUID + ".hands";
-			HARMONY_GUID_MAGPALM = GUID + ".magpalm";
-			HARMONY_GUID_CHEAT = GUID + ".cheats";
-
-			Instance = this;
-
-			Configs = new RootConfig(Config);
-			PatchInit();
+			Init();
 		}
 
-		private void OnLevelWasLoaded(int index)
+		private void OnDestroy()
+		{
+			_handCustomization.Unhook();
+			_magPalm.Unhook();
+
+			SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
+		}
+
+		private void Init()
+		{
+			_config = new RootConfig(Config);
+
+			_config.MagPalm.Enable.SettingChanged += MagPalmEnable_SettingChanged;
+			_config.MagPalm.Enable.SettingChanged += Cheat_SettingChanged;
+			_config.zCheat.CursedPalms.SettingChanged += Cheat_SettingChanged;
+			_config.zCheat.SizeLimit.SettingChanged += Cheat_SettingChanged;
+
+			_handCustomization = new HandCustomization(_config);
+			_handCustomization.Hook();
+
+			_magPalm = new MagPalm(_config, Logger);
+			_magPalm.Hook();
+
+			ScoreSubmissionManager();
+
+			SceneManager.sceneLoaded += SceneManager_sceneLoaded;
+		}
+
+		#region Hook Events
+
+		private void SceneManager_sceneLoaded(Scene scene, LoadSceneMode mode)
 		{
 			Config.Reload();
 		}
 
-		#region PatchInit
-
-		// Subscribes to config change events & inits harmony patches 
-		private void PatchInit()
-		{
-			Configs.MagPalm.Enable.SettingChanged += MagPalmEnable_SettingChanged;
-			Configs.MagPalm.Enable.SettingChanged += Cheat_SettingChanged;
-			Configs.zCheat.CursedPalms.SettingChanged += Cheat_SettingChanged;
-			Configs.zCheat.SizeLimit.SettingChanged += Cheat_SettingChanged;
-
-			_harmonyHands = new Harmony(HARMONY_GUID_HANDS);
-			_harmonyHands.PatchAll(typeof(HandCustomizationPatches));
-
-			_harmonyMagPalm = new Harmony(HARMONY_GUID_MAGPALM);
-			PatchIfMagPalm();
-
-			_harmonyCheat = new Harmony(HARMONY_GUID_CHEAT);
-			PatchIfCheatsExist();
-		}
-
 		private void MagPalmEnable_SettingChanged(object sender, System.EventArgs e)
 		{
-			PatchIfMagPalm();
+			if (_config.MagPalm.Enable.Value)
+			{
+				_magPalm.Hook();
+			}
+			else
+			{
+				_magPalm.Unhook();
+			}
 		}
 
 		private void Cheat_SettingChanged(object sender, System.EventArgs e)
 		{
-			PatchIfCheatsExist();
+			ScoreSubmissionManager();
 		}
 
-		private void PatchIfMagPalm()
-		{
-			if (Configs.MagPalm.Enable.Value)
+		private void ScoreSubmissionManager()
+		{	
+			var cfg = _config.zCheat;
+			if (_config.MagPalm.Enable.Value && cfg.CursedPalms.Value || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium)
 			{
-				Logger.LogDebug("Mag palming enabled");
-				_harmonyMagPalm.PatchAll(typeof(MagPalmPatches));
+				_api.RequestLeaderboardDisable(Source, true);
 			}
 			else
 			{
-				Logger.LogDebug("Mag palming disabled");
-				_harmonyMagPalm.UnpatchSelf();
-			}
-		}
-
-		private void PatchIfCheatsExist()
-		{
-			// Only patch on state change
-			var cfg = Configs.zCheat;
-			if (Configs.MagPalm.Enable.Value && (cfg.CursedPalms.Value || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium))
-			{
-				Logger.LogDebug("TNH score submission disabled");
-				_harmonyCheat.PatchAll(typeof(ScorePatches));
-			}
-			else if (Harmony.HasAnyPatches(HARMONY_GUID_CHEAT))
-			{
-				Logger.LogDebug("TNH score submission enabled");
-				_harmonyCheat.UnpatchSelf();
+				_api.RequestLeaderboardDisable(Source, false);
 			}
 		}
 		#endregion
@@ -122,7 +108,7 @@ namespace BetterHands
 
 			var geo = controllerGeos.FirstOrDefault(g => g.activeSelf);
 
-			return geo == null ? hand.Display_Controller : geo;
+			return geo ?? hand.Display_Controller;
 		}
 		#endregion
 	}
