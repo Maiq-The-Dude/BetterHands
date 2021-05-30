@@ -30,7 +30,11 @@ namespace BetterHands
 			_handCustomization = new HandsRecolor(_config);
 			_magPalm = new MagPalm(_config, Logger);
 
-			On.FistVR.FVRPlayerBody.Init += FVRPlayerBody_Init;
+			On.FistVR.FVRPlayerBody.Init += (orig, self, SceneSettings) =>
+			{
+				Config.Reload();
+				orig(self, SceneSettings);
+			};
 		}
 
 		private void Awake()
@@ -49,8 +53,6 @@ namespace BetterHands
 		{
 			_handCustomization.Unhook();
 			_magPalm.Unhook();
-
-			On.FistVR.FVRPlayerBody.Init -= FVRPlayerBody_Init;
 		}
 
 		private void ScoreSubmissionManager()
@@ -73,14 +75,6 @@ namespace BetterHands
 		private void Cheat_SettingChanged(object sender, System.EventArgs e)
 		{
 			ScoreSubmissionManager();
-		}
-
-		// Reload config here before QB is configured
-		private void FVRPlayerBody_Init(On.FistVR.FVRPlayerBody.orig_Init orig, FVRPlayerBody self, FVRSceneSettings SceneSettings)
-		{
-			Config.Reload();
-
-			orig(self, SceneSettings);
 		}
 
 		private void MagPalmEnable_SettingChanged(object sender, System.EventArgs e)

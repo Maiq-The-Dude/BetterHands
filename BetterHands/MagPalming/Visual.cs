@@ -57,10 +57,10 @@ namespace BetterHands.MagPalming
 		{
 			orig(self, hand);
 
-			if (GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
+			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled && GM.Options.QuickbeltOptions.HideControllerGeoWhenObjectHeld)
 			{
 				var otherHand = self.m_hand.OtherHand;
-				if (MP.IsSpecificPalmSlotEmpty(otherHand))
+				if (otherHand != null && MP.IsSpecificPalmSlotEmpty(otherHand))
 				{
 					otherHand.UpdateControllerDefinition();
 				}
