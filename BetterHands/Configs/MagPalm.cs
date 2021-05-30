@@ -24,7 +24,6 @@ namespace BetterHands.Configs
 			CollisionPrevention = config.Bind(section + " Options", nameof(CollisionPrevention), true, "Prevents physics clanking by disabling palmed item collision while moving above CollisionPreventionVelocity. Only for smooth locomotion");
 			CollisionPreventionVelocity = config.Bind(section + " Options", nameof(CollisionPreventionVelocity), 1.5f, "Threshold for CollisionPrevention to kick in for palmed items. Lower to 0 to never have collision on the palmed item");
 
-
 			Position = config.Bind(section + " Position & Rotation", nameof(Position), new Vector3(0.04f, 0, 0), "Position. X is Outward/Inward, Y is Rearward/Forward, Z is Up/Down");
 			Rotation = config.Bind(section + " Position & Rotation", nameof(Rotation), Vector3.zero, "Rotation. X is Forward/Rearward tilt, Y is Outward/Inward tilt, Z is Spin");
 

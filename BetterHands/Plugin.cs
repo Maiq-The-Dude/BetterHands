@@ -1,11 +1,11 @@
 ﻿using BetterHands.Configs;
-using BetterHands.Hooks;
+using BetterHands.Customization;
+using BetterHands.MagPalming;
 using Deli.H3VR.Api;
 using Deli.Setup;
 using FistVR;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace BetterHands
 {
@@ -13,25 +13,12 @@ namespace BetterHands
 	{
 		private readonly H3Api _api = H3Api.Instance;
 
-		private RootConfig _config;
+		private readonly RootConfig _config;
 
-		private HandCustomization _handCustomization;
-		private MagPalm _magPalm;
+		private readonly HandsRecolor _handCustomization;
+		private readonly MagPalm _magPalm;
 
 		public Plugin()
-		{
-			Init();
-		}
-
-		private void OnDestroy()
-		{
-			_handCustomization.Unhook();
-			_magPalm.Unhook();
-
-			SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
-		}
-
-		private void Init()
 		{
 			_config = new RootConfig(Config);
 
@@ -40,22 +27,60 @@ namespace BetterHands
 			_config.zCheat.CursedPalms.SettingChanged += Cheat_SettingChanged;
 			_config.zCheat.SizeLimit.SettingChanged += Cheat_SettingChanged;
 
-			_handCustomization = new HandCustomization(_config);
+			_handCustomization = new HandsRecolor(_config);
+			_magPalm = new MagPalm(_config, Logger);
+
+			On.FistVR.FVRPlayerBody.Init += FVRPlayerBody_Init;
+		}
+
+		private void Awake()
+		{
 			_handCustomization.Hook();
 
-			_magPalm = new MagPalm(_config, Logger);
-			_magPalm.Hook();
+			if (_config.MagPalm.Enable.Value)
+			{
+				_magPalm.Hook();
+			}
 
 			ScoreSubmissionManager();
+		}
 
-			SceneManager.sceneLoaded += SceneManager_sceneLoaded;
+		private void OnDestroy()
+		{
+			_handCustomization.Unhook();
+			_magPalm.Unhook();
+
+			On.FistVR.FVRPlayerBody.Init -= FVRPlayerBody_Init;
+		}
+
+		private void ScoreSubmissionManager()
+		{
+			var cfg = _config.zCheat;
+			if (_config.MagPalm.Enable.Value && cfg.CursedPalms.Value || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium)
+			{
+				Logger.LogDebug("TNH scoring is disabled");
+				_api.RequestLeaderboardDisable(Source, true);
+			}
+			else
+			{
+				Logger.LogDebug("TNH scoring is enabled");
+				_api.RequestLeaderboardDisable(Source, false);
+			}
 		}
 
 		#region Hook Events
 
-		private void SceneManager_sceneLoaded(Scene scene, LoadSceneMode mode)
+		private void Cheat_SettingChanged(object sender, System.EventArgs e)
+		{
+			ScoreSubmissionManager();
+		}
+
+		// Reload config here before QB is configured
+		private void FVRPlayerBody_Init(On.FistVR.FVRPlayerBody.orig_Init orig, FVRPlayerBody self, FVRSceneSettings SceneSettings)
 		{
 			Config.Reload();
+
+			orig(self, SceneSettings);
 		}
 
 		private void MagPalmEnable_SettingChanged(object sender, System.EventArgs e)
@@ -70,26 +95,9 @@ namespace BetterHands
 			}
 		}
 
-		private void Cheat_SettingChanged(object sender, System.EventArgs e)
-		{
-			ScoreSubmissionManager();
-		}
+		#endregion Hook Events
 
-		private void ScoreSubmissionManager()
-		{	
-			var cfg = _config.zCheat;
-			if (_config.MagPalm.Enable.Value && cfg.CursedPalms.Value || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium)
-			{
-				_api.RequestLeaderboardDisable(Source, true);
-			}
-			else
-			{
-				_api.RequestLeaderboardDisable(Source, false);
-			}
-		}
-		#endregion
-
-		#region Helpers
+		#region Shared
 
 		// Return the gameobject geo we are using
 		public static GameObject GetControllerFrom(FVRViveHand hand)
@@ -110,6 +118,7 @@ namespace BetterHands
 
 			return geo ?? hand.Display_Controller;
 		}
-		#endregion
+
+		#endregion Shared
 	}
 }

@@ -16,7 +16,6 @@ Mag palming allows you to carry two small sized magazines in one hand. To do thi
 - `EasyPalmLoading` to enable Easy Mag Loading on only the palmed item. Not necessary if Easy Mag Loading is enabled via the ingame options panel already
 - Change palmable mag size limit. **Greater than `Medium` will disable TNH score submission**
 - `CursedPalms` allows any interactive object to be palmed. Use at your own risk, bugs stemming from this will rarely be investigated. **Disables TNH score submission**
-- `MirroredGuns` to fire a gun in the hand and palm slot at once. Requires `CursedPalms`
 - Rebind mag palm key
   - AX/BY buttons
   - Grip
@@ -32,7 +31,7 @@ Mag palming allows you to carry two small sized magazines in one hand. To do thi
 - Resize individual interaction visual spheres
 
 ## Installation
-Requires [BepInEx 5.4.x](https://github.com/BepInEx/BepInEx/releases/latest) and [Deli 0.3.x](https://github.com/Deli-Collective/Deli/releases).
+Requires [BepInEx 5.4.x](https://github.com/BepInEx/BepInEx/releases/latest), [Deli 0.3.x](https://github.com/Deli-Collective/Deli/releases), and [Deli.H3VR 0.2.0](https://github.com/Deli-Collective/Deli.H3VR/releases/tag/v0.2.0).
 
 Download the [latest release of BetterHands](https://github.com/Maiq-The-Dude/BetterHands/releases/latest) and place `betterhands.deli` into `h3vr/deli/mods` folder.
 

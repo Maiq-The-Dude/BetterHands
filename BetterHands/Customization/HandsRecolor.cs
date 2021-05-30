@@ -3,15 +3,15 @@ using BetterHands.Configs;
 using FistVR;
 using UnityEngine;
 
-namespace BetterHands.Hooks
+namespace BetterHands.Customization
 {
-	public class HandCustomization
+	public class HandsRecolor
 	{
 		private const string COLOR_PROPERTY = "_RimColor";
 
 		private readonly RootConfig _config;
 
-		public HandCustomization(RootConfig config)
+		public HandsRecolor(RootConfig config)
 		{
 			_config = config;
 		}
