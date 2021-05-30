@@ -7,7 +7,8 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="Deli" Version="0.3.1" />
+    <PackageReference Include="Deli" Version="0.3.2" />
+    <PackageReference Include="Deli.H3VR" Version="0.2.0" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0" PrivateAssets="all" />
     <PackageReference Include="jnm2.ReferenceAssemblies.net35" Version="1.0.1" PrivateAssets="all" />
   </ItemGroup>
@@ -16,8 +17,8 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>..\libs\Assembly-CSharp_publicized.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>..\libs\Assembly-CSharp-firstpass.dll</HintPath>
+    <Reference Include="MMHOOK_Assembly-CSharp">
+      <HintPath>..\libs\MMHOOK_Assembly-CSharp.dll</HintPath>
     </Reference>
   </ItemGroup>
 

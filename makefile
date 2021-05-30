@@ -5,7 +5,7 @@ GIT_HASH         = $(shell git rev-parse HEAD)
 
 PROJECT          = BetterHands
 PACKAGE          = BetterHands.deli
-CONTENTS         = manifest.json BetterHands.dll
+CONTENTS         = manifest.json hookgen.conf BetterHands.dll
 
 CONFIG           = Release
 FRAMEWORK        = net35
