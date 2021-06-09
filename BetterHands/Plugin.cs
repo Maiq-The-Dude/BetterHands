@@ -46,7 +46,10 @@ namespace BetterHands
 			{
 				_magPalm.Hook();
 			}
+		}
 
+		private void Start()
+		{
 			ScoreSubmissionManager();
 		}
 
