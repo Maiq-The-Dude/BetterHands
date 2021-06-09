@@ -1,9 +1,10 @@
 ﻿using BetterHands.Configs;
 using BetterHands.Customization;
 using BetterHands.MagPalming;
-using Deli.H3VR.Api;
 using Deli.Setup;
 using FistVR;
+using Sodalite.Api;
+using System;
 using System.Linq;
 using UnityEngine;
 
@@ -11,12 +12,12 @@ namespace BetterHands
 {
 	public class Plugin : DeliBehaviour
 	{
-		private readonly H3Api _api = H3Api.Instance;
-
 		private readonly RootConfig _config;
 
 		private readonly HandsRecolor _handCustomization;
 		private readonly MagPalm _magPalm;
+
+		private IDisposable _leaderboardLock;
 
 		public Plugin()
 		{
@@ -61,12 +62,13 @@ namespace BetterHands
 			if (_config.MagPalm.Enable.Value && cfg.CursedPalms.Value || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium)
 			{
 				Logger.LogDebug("TNH scoring is disabled");
-				_api.RequestLeaderboardDisable(Source, true);
+				_leaderboardLock ??= LeaderboardAPI.GetLeaderboardDisableLock();
 			}
 			else
 			{
 				Logger.LogDebug("TNH scoring is enabled");
-				_api.RequestLeaderboardDisable(Source, false);
+				_leaderboardLock?.Dispose();
+				_leaderboardLock = null;
 			}
 		}
 
