@@ -169,10 +169,10 @@ namespace BetterHands.MagPalming
 		{
 			var cheatCfg = _config.zCheat;
 
-			return (item is FVRFireArmMagazine mag && mag.Size <= cheatCfg.SizeLimit.Value ||
+			return (item is FVRFireArmMagazine mag && mag.Size <= cheatCfg.SizeLimit.Value) ||
 				item is FVRFireArmClip ||
-				item is FVRFireArmRound && _config.MagPalm.RoundPalm.Value ||
-				cheatCfg.CursedPalms.Value && !item.m_isHardnessed);
+				(item is FVRFireArmRound && _config.MagPalm.RoundPalm.Value) ||
+				(cheatCfg.CursedPalms.Value && !item.m_isHardnessed);
 		}
 
 		// If mag palm keybind matches grabbity keybind, suppress mag palm input if grabbity sphere is on an item
@@ -181,8 +181,8 @@ namespace BetterHands.MagPalming
 			if (_config.MagPalm.Controls.GrabbityProtection.Value)
 			{
 				var grabbityState = GM.Options.ControlOptions.WIPGrabbityButtonState;
-				var grabbityConflict = (grabbityState == ControlOptions.WIPGrabbityButton.Trigger && (keybind == MagPalmControlsConfig.Keybind.Trigger)
-										|| grabbityState == ControlOptions.WIPGrabbityButton.Grab && (keybind == MagPalmControlsConfig.Keybind.Grip));
+				var grabbityConflict = ((grabbityState == ControlOptions.WIPGrabbityButton.Trigger && (keybind == MagPalmControlsConfig.Keybind.Trigger))
+										|| (grabbityState == ControlOptions.WIPGrabbityButton.Grab && (keybind == MagPalmControlsConfig.Keybind.Grip)));
 				if (grabbityConflict)
 				{
 					return !hand.Grabbity_HoverSphere.gameObject.activeSelf;

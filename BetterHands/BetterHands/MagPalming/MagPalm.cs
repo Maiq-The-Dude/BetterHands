@@ -130,14 +130,14 @@ namespace BetterHands.MagPalming
 		// Is object in any magpalm slot
 		public bool ObjInPalmSlot(FVRQuickBeltSlot slot)
 		{
-			return (slot != null && (slot == QBList[HandSlots[0]] || slot == QBList[HandSlots[1]]));
+			return slot != null && (slot == QBList[HandSlots[0]] || slot == QBList[HandSlots[1]]);
 		}
 
 		public bool IsSpecificPalmSlotEmpty(FVRViveHand hand)
 		{
 			var qbSlot = hand.IsThisTheRightHand ? QBList[HandSlots[0]] : QBList[HandSlots[1]];
 
-			return (qbSlot.CurObject == null);
+			return qbSlot.CurObject == null;
 		}
 
 		public FVRViveHand GetHandFromSlot(FVRQuickBeltSlot slot)
