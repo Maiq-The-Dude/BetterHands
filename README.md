@@ -35,4 +35,5 @@ Requires
 - [BepInEx 5.4.x](https://github.com/BepInEx/BepInEx/releases)
 - [Sodalite](https://github.com/H3VR-Modding/Sodalite/releases)
 
-Extract the BetterHands `.zip` into the BepInEx plugins folder
+
+Download and open [BetterHands.zip](https://github.com/Maiq-The-Dude/BetterHands/releases/latest), then drag `BetterHands.dll` within into the `h3vr/bepinex/plugins/ directory`
