@@ -36,4 +36,4 @@ Requires
 - [Sodalite](https://github.com/H3VR-Modding/Sodalite/releases)
 
 
-Download and open [BetterHands.zip](https://github.com/Maiq-The-Dude/BetterHands/releases/latest), then drag `BetterHands.dll` within into the `h3vr/bepinex/plugins/ directory`
+Download and open [BetterHands.zip](https://github.com/Maiq-The-Dude/BetterHands/releases/latest), then drag `BetterHands.dll` within into the `h3vr/bepinex/plugins/` directory
