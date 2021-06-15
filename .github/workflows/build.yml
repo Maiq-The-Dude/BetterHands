@@ -1,0 +1,31 @@
+name: Build project
+
+on: [ push ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - run: git fetch --prune --unshallow
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+        
+    - name: Install dependencies
+      run: dotnet restore src/
+      
+    - name: Build
+      run: dotnet build src/ --configuration Release --no-restore
+      
+    - name: Package
+      run: bash thunderstore/make_package.sh
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: Thunderstore Package
+        path: thunderstore/BetterHands.zip

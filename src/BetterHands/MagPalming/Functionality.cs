@@ -45,7 +45,7 @@ namespace BetterHands.MagPalming
 			{
 				var triggerWell = collider.GetComponent<FVRFireArmReloadTriggerWell>();
 				var firearm = triggerWell.FireArm;
-				if (mag.MagazineType == triggerWell.TypeOverride || mag.MagazineType == firearm.MagazineType && (firearm.EjectDelay <= 0f || mag != firearm.LastEjectedMag) && firearm.Magazine == null)
+				if (mag.MagazineType == triggerWell.TypeOverride || (mag.MagazineType == firearm.MagazineType && (firearm.EjectDelay <= 0f || mag != firearm.LastEjectedMag) && firearm.Magazine == null))
 				{
 					// Remove mag from qb, load, buzz loading hand, and unhide controller geo
 					mag.SetQuickBeltSlot(null);
@@ -65,7 +65,7 @@ namespace BetterHands.MagPalming
 			{
 				var triggerWell = collider.gameObject.GetComponent<FVRFireArmClipTriggerWell>();
 				var firearm = triggerWell.FireArm;
-				if (triggerWell != null && triggerWell.FireArm != null && firearm.ClipType == clip.ClipType && firearm.ClipEjectDelay <= 0f && firearm.Clip == null)
+				if (triggerWell?.FireArm != null && firearm.ClipType == clip.ClipType && firearm.ClipEjectDelay <= 0f && firearm.Clip == null)
 				{
 					// Remove from qb, load, buzz loading hand, and unhide controller geo
 					clip.SetQuickBeltSlot(null);
@@ -93,7 +93,7 @@ namespace BetterHands.MagPalming
 
 				if (fvrObj != null && MP.ObjInPalmSlot(fvrObj.QuickbeltSlot))
 				{
-					return (col.gameObject.CompareTag(layer));
+					return col.gameObject.CompareTag(layer);
 				}
 			}
 
@@ -140,7 +140,7 @@ namespace BetterHands.MagPalming
 
 			if (GM.CurrentSceneSettings.AreQuickbeltSlotsEnabled)
 			{
-				if (col.collider.attachedRigidbody != null && col.collider.attachedRigidbody.gameObject.GetComponent<FVRPhysicalObject>() != null)
+				if (col.collider.attachedRigidbody?.gameObject.GetComponent<FVRPhysicalObject>() != null)
 				{
 					self.timeSinceLastCollision = 0f;
 				}

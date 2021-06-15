@@ -1,7 +1,7 @@
 # BetterHands
 [![version](https://img.shields.io/github/v/release/Maiq-The-Dude/BetterHands?&label=version&style=flat-square)](https://github.com/Maiq-The-Dude/BetterHands/releases/latest) [![discord](https://img.shields.io/discord/777351065950879744?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2&style=flat-square)](https://discord.gg/g8xeFyt42j)
 
-A Deli mod to recolor controller geo, resize interaction spheres, and add mag palming.
+A mod to recolor controller geo, resize interaction spheres, and add mag palming.
 All features are optional and configured via the config file. Configs can be edited mid-game, but will require a scene reload to take effect.
 
 ## Mag Palming
@@ -32,7 +32,10 @@ Mag palming allows you to carry two small sized magazines in one hand. To do thi
 
 ## Manual Installation
 Requires
-- [Deli 0.4+](https://github.com/Deli-Collective/Deli/releases)
-- [Sodalite](https://github.com/H3VR-Modding/Sodalite/releases)
+- [BepInEx 5.4.x](https://github.com/BepInEx/BepInEx)
+- [BepInEx.Monomod.Loader](https://github.com/BepInEx/BepInEx.MonoMod.Loader)
+- [BepInEx.Monomod.HookGenPatcher](https://github.com/harbingerofme/Bepinex.Monomod.HookGenPatcher)
+- [Sodalite](https://github.com/H3VR-Modding/Sodalite)
 
-Extract the BetterHands `.zip` into the BepInEx plugins folder
+
+Download and open [BetterHands.zip](https://github.com/Maiq-The-Dude/BetterHands/releases/latest), then drag `BetterHands.dll` within into the `h3vr/bepinex/plugins/` directory

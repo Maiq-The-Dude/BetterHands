@@ -1,16 +1,18 @@
-﻿using BetterHands.Configs;
+﻿using BepInEx;
+using BetterHands.Configs;
 using BetterHands.Customization;
 using BetterHands.MagPalming;
-using Deli.Setup;
 using FistVR;
 using Sodalite.Api;
 using System;
-using System.Linq;
 using UnityEngine;
 
 namespace BetterHands
 {
-	public class Plugin : DeliBehaviour
+	[BepInPlugin("maiq.BetterHands", "BetterHands", "1.4.0")]
+	[BepInDependency("nrgill28.Sodalite")]
+	[BepInProcess("h3vr.exe")]
+	public class Plugin : BaseUnityPlugin
 	{
 		private readonly RootConfig _config;
 
@@ -62,7 +64,7 @@ namespace BetterHands
 		private void ScoreSubmissionManager()
 		{
 			var cfg = _config.zCheat;
-			if (_config.MagPalm.Enable.Value && cfg.CursedPalms.Value || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium)
+			if ((_config.MagPalm.Enable.Value && cfg.CursedPalms.Value) || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium)
 			{
 				Logger.LogDebug("TNH scoring is disabled");
 				_leaderboardLock ??= LeaderboardAPI.GetLeaderboardDisableLock();
@@ -113,7 +115,7 @@ namespace BetterHands
 				hand.Display_Controller_WMR
 			};
 
-			var geo = controllerGeos.FirstOrDefault(g => g.activeSelf);
+			var geo = Array.Find(controllerGeos, g => g.activeSelf);
 
 			return geo ?? hand.Display_Controller;
 		}
