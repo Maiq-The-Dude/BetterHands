@@ -7,13 +7,13 @@ cd $TS_DIR
 rm BetterHands.zip
 
 # Create our temp folders
-mkdir -p TEMP/BetterHands/plugins
+mkdir -p TEMP/
 
 # Copy the files into them
 cp manifest.json TEMP/manifest.json
 cp icon.png TEMP/icon.png
 cp ../README.md TEMP/README.md
-cp ../src/BetterHands/bin/Release/net35/BetterHands.dll TEMP/BetterHands/plugins/BetterHands.dll
+cp ../src/BetterHands/bin/Release/net35/BetterHands.dll TEMP/BetterHands.dll
 
 # Modify the version number
 sed -i "s/{VERSION}/$VERSION/g" TEMP/manifest.json
