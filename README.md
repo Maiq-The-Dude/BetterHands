@@ -32,8 +32,10 @@ Mag palming allows you to carry two small sized magazines in one hand. To do thi
 
 ## Manual Installation
 Requires
-- [BepInEx 5.4.x](https://github.com/BepInEx/BepInEx/releases)
-- [Sodalite](https://github.com/H3VR-Modding/Sodalite/releases)
+- [BepInEx 5.4.x](https://github.com/BepInEx/BepInEx)
+- [BepInEx.Monomod.Loader](https://github.com/BepInEx/BepInEx.MonoMod.Loader)
+- [BepInEx.Monomod.HookGenPatcher](https://github.com/harbingerofme/Bepinex.Monomod.HookGenPatcher)
+- [Sodalite](https://github.com/H3VR-Modding/Sodalite)
 
 
 Download and open [BetterHands.zip](https://github.com/Maiq-The-Dude/BetterHands/releases/latest), then drag `BetterHands.dll` within into the `h3vr/bepinex/plugins/` directory
