@@ -130,7 +130,34 @@ namespace BetterHands.MagPalming
 					MP.GetHandFromSlot(qbSlot).UpdateControllerDefinition();
 					UnityEngine.Object.Destroy(self.gameObject);
 				}
+				else if (self.m_hoverOverReloadTrigger != null)
+				{
+					if (self.m_hoverOverReloadTrigger.Magazine != null)
+					{
+						var mag = self.m_hoverOverReloadTrigger.Magazine;
+						if (mag.RoundType == self.RoundType)
+						{
+							mag.AddRound(self, true, true);
+							DestroyRound(self, qbSlot);
+						}
+					}
+					else if (self.m_hoverOverReloadTrigger.Clip != null)
+					{
+						var clip = self.m_hoverOverReloadTrigger.Clip;
+						if (clip.RoundType == self.RoundType)
+						{
+							clip.AddRound(self, true, true);
+							DestroyRound(self, qbSlot);
+						}
+					}
+				}
 			}
+		}
+
+		private void DestroyRound(FVRFireArmRound round, FVRQuickBeltSlot qbSlot)
+		{
+			Object.Destroy(round.gameObject);
+			MP.GetHandFromSlot(qbSlot).UpdateControllerDefinition();
 		}
 
 		// Allow palmed mags to hit physical mag releases
