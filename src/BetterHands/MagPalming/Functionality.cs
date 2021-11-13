@@ -137,7 +137,7 @@ namespace BetterHands.MagPalming
 						var mag = self.m_hoverOverReloadTrigger.Magazine;
 						if (mag.RoundType == self.RoundType)
 						{
-							mag.AddRound(self, true, true);
+							mag.AddRound(self, true, true, true);
 							DestroyRound(self, qbSlot);
 						}
 					}
