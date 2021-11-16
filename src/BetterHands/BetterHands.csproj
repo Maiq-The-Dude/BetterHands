@@ -7,15 +7,13 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <PackageReference Include="H3VR.GameLibs" Version="0.100.6-r.0" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
     <PackageReference Include="jnm2.ReferenceAssemblies.net35" Version="1.0.1" PrivateAssets="all" />
-    <PackageReference Include="Sodalite" Version="1.0.0" />
+    <PackageReference Include="Sodalite" Version="1.1.0" />
   </ItemGroup>
   
   <ItemGroup>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>..\libs\Assembly-CSharp_publicized.dll</HintPath>
-    </Reference>
     <Reference Include="MMHOOK_Assembly-CSharp">
       <HintPath>..\libs\MMHOOK_Assembly-CSharp.dll</HintPath>
     </Reference>
