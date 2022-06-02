@@ -13,17 +13,25 @@ namespace BetterHands.Customization
 
 		public HandsRecolor(RootConfig config)
 		{
-			_config = config;
+			_config = config;      
 		}
 
 		public void Hook()
 		{
 			On.FistVR.FVRViveHand.DoInitialize += FVRViveHand_DoInitialize;
+			_config.Customization.MaterialA.SettingChanged += Recolor_SettingChanged;
+			_config.Customization.MaterialB.SettingChanged += Recolor_SettingChanged;
+			_config.Customization.Intensity.SettingChanged += Recolor_SettingChanged;
+			_config.Customization.InteractSphere.SettingChanged += Recolor_SettingChanged;
 		}
 
 		public void Unhook()
 		{
 			On.FistVR.FVRViveHand.DoInitialize -= FVRViveHand_DoInitialize;
+			_config.Customization.MaterialA.SettingChanged -= Recolor_SettingChanged;
+			_config.Customization.MaterialB.SettingChanged -= Recolor_SettingChanged;
+			_config.Customization.Intensity.SettingChanged -= Recolor_SettingChanged;
+			_config.Customization.InteractSphere.SettingChanged -= Recolor_SettingChanged;
 		}
 
 		private void FVRViveHand_DoInitialize(On.FistVR.FVRViveHand.orig_DoInitialize orig, FVRViveHand self)
@@ -33,17 +41,27 @@ namespace BetterHands.Customization
 			CustomizeHand(self);
 		}
 
-		private void CustomizeHand(FVRViveHand fvrhand)
+		private void Recolor_SettingChanged(object sender, System.EventArgs e)
 		{
-			var hand = fvrhand.transform;
+			CustomizeHand(GM.CurrentPlayerBody.RightHand);
+		}
 
+		private void CustomizeHand(Transform hand)
+		{
+			var fvrHand = hand.GetComponent<FVRViveHand>();
+			CustomizeHand(fvrHand);
+			CustomizeHand(fvrHand.OtherHand);
+		}
+
+		private void CustomizeHand(FVRViveHand fvrhand)
+		{	
 			// Set the idle sphere to our color
 			var cfg = _config.Customization;
 			fvrhand.TouchSphereMat_NoInteractable.SetColor(COLOR_PROPERTY, Recolor(cfg.InteractSphere, cfg.Intensity.Value));
 
 			// Resize interaction spheres & colliders
 			var scale = new float[] { cfg.FingerSize.Value, cfg.PalmSize.Value };
-			SphereCollider[] collider = hand.GetComponents<SphereCollider>();
+			SphereCollider[] collider = fvrhand.transform.GetComponents<SphereCollider>();
 			Transform[] vis = new Transform[]
 			{
 				fvrhand.TouchSphere.transform,
@@ -85,8 +103,8 @@ namespace BetterHands.Customization
 				{
 					var mat = rend.material;
 
-					// All controller geo have two materials, blue & purple
-					if (mat.name.ToLower().Contains("blue"))
+					// All controller geo have two materials, blue & purple by default
+					if (mat.name.IndexOf("blue", System.StringComparison.OrdinalIgnoreCase) != -1)
 					{
 						mat.SetColor(COLOR_PROPERTY, Recolor(cfg.MaterialA, intensity));
 					}
@@ -100,10 +118,10 @@ namespace BetterHands.Customization
 			}
 		}
 
-		// Format the human readable RGBA to what unity wants
-		private Vector4 Recolor(ConfigEntry<Vector4> cfg, float intensity)
+		// Format the human readable RGBA to what unity hdr wants
+		private Vector4 Recolor(ConfigEntry<Color> cfg, float intensity)
 		{
-			var color = new Vector4(intensity * (cfg.Value[0] / 255), intensity * (cfg.Value[1] / 255), intensity * (cfg.Value[2] / 255), cfg.Value[3] / 1);
+			var color = new Vector4(intensity * cfg.Value.r, intensity * cfg.Value.g, intensity * cfg.Value.b, cfg.Value.a);
 			return color;
 		}
 	}

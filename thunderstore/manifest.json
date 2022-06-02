@@ -1,8 +1,8 @@
 {
     "name": "BetterHands",
-    "version_number": "1.5.1",
+    "version_number": "1.6.0",
     "dependencies": [
-        "nrgill28-Sodalite-1.0.0"
+        "nrgill28-Sodalite-1.3.0"
     ],
     "description": "Adds mag palming and controller color customization.",
     "website_url": "https://github.com/Maiq-The-Dude/BetterHands"

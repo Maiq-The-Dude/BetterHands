@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace BetterHands
 {
-	[BepInPlugin("maiq.BetterHands", "BetterHands", "1.5.1")]
+	[BepInPlugin("maiq.BetterHands", "BetterHands", "1.6.0")]
 	[BepInDependency("nrgill28.Sodalite")]
 	[BepInProcess("h3vr.exe")]
 	public class Plugin : BaseUnityPlugin
@@ -67,7 +67,7 @@ namespace BetterHands
 			if ((_config.MagPalm.Enable.Value && cfg.CursedPalms.Value) || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium)
 			{
 				Logger.LogDebug("TNH scoring is disabled");
-				_leaderboardLock ??= LeaderboardAPI.GetLeaderboardDisableLock();
+				_leaderboardLock ??= LeaderboardAPI.LeaderboardDisabled.TakeLock();
 			}
 			else
 			{

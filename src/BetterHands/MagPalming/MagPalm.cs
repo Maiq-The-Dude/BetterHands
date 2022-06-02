@@ -2,6 +2,7 @@
 using BetterHands.Configs;
 using FistVR;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace BetterHands.MagPalming
@@ -64,10 +65,13 @@ namespace BetterHands.MagPalming
 		{
 			orig(self, index);
 
-			ConfigMagPalming(self.RightHand);
-			ConfigMagPalming(self.LeftHand);
+			if (!self.QuickbeltSlots.Any(slot => slot.name.Contains(self.LeftHand.name)))
+			{
+				ConfigMagPalming(self.RightHand);
+				ConfigMagPalming(self.LeftHand);
 
-			QBList = GM.CurrentPlayerBody.QuickbeltSlots;
+				QBList = self.QuickbeltSlots;
+			}
 		}
 
 		private void ConfigMagPalming(Transform hand)
