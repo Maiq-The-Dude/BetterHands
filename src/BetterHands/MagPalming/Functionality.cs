@@ -1,6 +1,7 @@
 ﻿using BetterHands.Configs;
 using FistVR;
 using UnityEngine;
+using BepInEx.Logging;
 
 namespace BetterHands.MagPalming
 {
@@ -45,12 +46,25 @@ namespace BetterHands.MagPalming
 			{
 				var triggerWell = collider.GetComponent<FVRFireArmReloadTriggerWell>();
 				var firearm = triggerWell.FireArm;
-				if (mag.MagazineType == triggerWell.TypeOverride || (mag.MagazineType == firearm.MagazineType && (firearm.EjectDelay <= 0f || mag != firearm.LastEjectedMag) && firearm.Magazine == null))
-				{
+				var afirearm = triggerWell.AFireArm;
+				if (triggerWell.UsesSecondaryMagSlots && firearm != null && triggerWell.FireArm.SecondaryMagazineSlots[triggerWell.SecondaryMagSlotIndex].Magazine == null)
+                {
 					// Remove mag from qb, load, buzz loading hand, and unhide controller geo
+					mag.SetQuickBeltSlot(null);
+					mag.LoadIntoSecondary(firearm, triggerWell.SecondaryMagSlotIndex);
+					BuzzAndUpdateControllerDef(mag.QuickbeltSlot, mag.FireArm);
+				}
+				else if (firearm != null && (mag.MagazineType == triggerWell.TypeOverride || (mag.MagazineType == firearm.MagazineType && (firearm.EjectDelay <= 0f || mag != firearm.LastEjectedMag) && firearm.Magazine == null)))
+				{
 					mag.SetQuickBeltSlot(null);
 					mag.Load(firearm);
 					BuzzAndUpdateControllerDef(mag.QuickbeltSlot, mag.FireArm);
+				}
+				else if (afirearm != null && (mag.MagazineType == triggerWell.TypeOverride || mag.MagazineType == afirearm.MagazineType && (afirearm.EjectDelay <= 0f || mag != afirearm.LastEjectedMag) && afirearm.Magazine == null))
+                {
+					mag.SetQuickBeltSlot(null);
+					mag.Load(afirearm);
+					BuzzAndUpdateControllerDef();
 				}
 			}
 		}
@@ -98,6 +112,12 @@ namespace BetterHands.MagPalming
 			}
 
 			return false;
+		}
+
+		private void BuzzAndUpdateControllerDef()
+        {
+			GM.CurrentPlayerBody.LeftHand.GetComponent<FVRViveHand>().UpdateControllerDefinition();
+			GM.CurrentPlayerBody.RightHand.GetComponent<FVRViveHand>().UpdateControllerDefinition();
 		}
 
 		private void BuzzAndUpdateControllerDef(FVRQuickBeltSlot slot, FVRFireArm fireArm)

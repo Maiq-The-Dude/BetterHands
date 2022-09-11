@@ -7,7 +7,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="H3VR.GameLibs" Version="0.104.0-r.0" />
+    <PackageReference Include="H3VR.GameLibs" Version="0.105.1" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
     <PackageReference Include="jnm2.ReferenceAssemblies.net35" Version="1.0.1" PrivateAssets="all" />
     <PackageReference Include="Sodalite" Version="1.3.0" />

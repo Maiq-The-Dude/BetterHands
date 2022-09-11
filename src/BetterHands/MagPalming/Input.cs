@@ -21,14 +21,14 @@ namespace BetterHands.MagPalming
 		{
 			On.FistVR.FVRViveHand.Update += FVRViveHand_Update;
 			On.FistVR.FVRPhysicalObject.FVRUpdate += FVRPhysicalObject_FVRUpdate;
-			On.FistVR.FVRMovementManager.UpdateModeArmSwinger += FVRMovementManager_UpdateModeArmSwinger;
+            On.FistVR.FVRMovementManager.UpdateSmoothLocomotion += FVRMovementManager_UpdateSmoothLocomotion;
 		}
 
-		public void Unhook()
+        public void Unhook()
 		{
 			On.FistVR.FVRViveHand.Update -= FVRViveHand_Update;
 			On.FistVR.FVRPhysicalObject.FVRUpdate -= FVRPhysicalObject_FVRUpdate;
-			On.FistVR.FVRMovementManager.UpdateModeArmSwinger -= FVRMovementManager_UpdateModeArmSwinger;
+			On.FistVR.FVRMovementManager.UpdateSmoothLocomotion -= FVRMovementManager_UpdateSmoothLocomotion;
 		}
 
 		#region Input Hooks
@@ -120,7 +120,7 @@ namespace BetterHands.MagPalming
 					var moveMan = GM.CurrentMovementManager;
 					var isMovingFast = (moveMan.m_isTwinStickSmoothTurningClockwise || moveMan.m_isTwinStickSmoothTurningCounterClockwise ||
 						_isArmSwingerTurning ||
-						(moveMan.m_armSwingerVelocity + moveMan.m_twoAxisVelocity).magnitude >= _config.MagPalm.CollisionPreventionVelocity.Value);
+						moveMan.m_smoothLocoVelocity.magnitude >= _config.MagPalm.CollisionPreventionVelocity.Value);
 
 					var layer = isMovingFast ? "NoCol" : "Default";
 
@@ -137,7 +137,7 @@ namespace BetterHands.MagPalming
 		}
 
 		// Check if smooth turning on ArmSwinger loco
-		private void FVRMovementManager_UpdateModeArmSwinger(On.FistVR.FVRMovementManager.orig_UpdateModeArmSwinger orig, FVRMovementManager self)
+		private void FVRMovementManager_UpdateSmoothLocomotion(On.FistVR.FVRMovementManager.orig_UpdateSmoothLocomotion orig, FVRMovementManager self)
 		{
 			orig(self);
 

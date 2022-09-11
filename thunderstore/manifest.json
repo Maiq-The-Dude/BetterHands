@@ -1,6 +1,6 @@
 {
     "name": "BetterHands",
-    "version_number": "1.6.0",
+    "version_number": "1.7.0",
     "dependencies": [
         "nrgill28-Sodalite-1.3.0"
     ],
