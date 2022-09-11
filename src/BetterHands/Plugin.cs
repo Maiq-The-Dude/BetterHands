@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace BetterHands
 {
-	[BepInPlugin("maiq.BetterHands", "BetterHands", "1.6.0")]
+	[BepInPlugin("maiq.BetterHands", "BetterHands", "1.7.0")]
 	[BepInDependency("nrgill28.Sodalite")]
 	[BepInProcess("h3vr.exe")]
 	public class Plugin : BaseUnityPlugin
