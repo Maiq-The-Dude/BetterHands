@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace BetterHands
 {
-	[BepInPlugin("maiq.BetterHands", "BetterHands", "1.7.0")]
+	[BepInPlugin("maiq.BetterHands", "BetterHands", "1.8.0")]
 	[BepInDependency("nrgill28.Sodalite")]
 	[BepInProcess("h3vr.exe")]
 	public class Plugin : BaseUnityPlugin
@@ -29,6 +29,7 @@ namespace BetterHands
 			_config.MagPalm.Enable.SettingChanged += Cheat_SettingChanged;
 			_config.zCheat.CursedPalms.SettingChanged += Cheat_SettingChanged;
 			_config.zCheat.SizeLimit.SettingChanged += Cheat_SettingChanged;
+			_config.zCheat.CursedTriggers.SettingChanged += Cheat_SettingChanged;
 
 			_handCustomization = new HandsRecolor(_config);
 			_magPalm = new MagPalm(_config, Logger);
@@ -64,7 +65,7 @@ namespace BetterHands
 		private void ScoreSubmissionManager()
 		{
 			var cfg = _config.zCheat;
-			if ((_config.MagPalm.Enable.Value && cfg.CursedPalms.Value) || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium)
+			if ((_config.MagPalm.Enable.Value && (cfg.CursedPalms.Value || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium)) || cfg.CursedTriggers.Value)
 			{
 				Logger.LogDebug("TNH scoring is disabled");
 				_leaderboardLock ??= LeaderboardAPI.LeaderboardDisabled.TakeLock();

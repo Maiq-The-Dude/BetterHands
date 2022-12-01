@@ -16,28 +16,38 @@ namespace BetterHands.MagPalming
 			_config = MP.Config;
 		}
 
-		public void Hook()
+        #region Hooks
+
+        public void Hook()
 		{
-			On.FistVR.FVRFireArmReloadTriggerMag.OnTriggerEnter += FVRFireArmReloadTriggerMag_OnTriggerEnter;
-			On.FistVR.FVRFireArmClipTriggerClip.OnTriggerEnter += FVRFireArmClipTriggerClip_OnTriggerEnter;
-			On.FistVR.FVRFireArmRound.FVRFixedUpdate += FVRFireArmRound_FVRFixedUpdate;
-			On.FistVR.PhysicalMagazineReleaseLatch.OnCollisionStay += PhysicalMagazineReleaseLatch_OnCollisionStay;
-			On.FistVR.FVRPhysicalObject.ToggleQuickbeltState += FVRPhysicalObject_ToggleQuickbeltState;
-			On.FistVR.FVRFireArmMagazine.FVRFixedUpdate += FVRFireArmMagazine_FVRFixedUpdate;
+			On.FistVR.FVRFireArmReloadTriggerMag.OnTriggerEnter		+= FVRFireArmReloadTriggerMag_OnTriggerEnter;
+			On.FistVR.FVRFireArmClipTriggerClip.OnTriggerEnter		+= FVRFireArmClipTriggerClip_OnTriggerEnter;
+			On.FistVR.FVRFireArmRound.FVRFixedUpdate				+= FVRFireArmRound_FVRFixedUpdate;
+			On.FistVR.PhysicalMagazineReleaseLatch.OnCollisionStay	+= PhysicalMagazineReleaseLatch_OnCollisionStay;
+			On.FistVR.FVRPhysicalObject.ToggleQuickbeltState		+= FVRPhysicalObject_ToggleQuickbeltState;
+			On.FistVR.FVRFireArmMagazine.FVRFixedUpdate				+= FVRFireArmMagazine_FVRFixedUpdate;
+            On.FistVR.FVRFireArm.Fire								+= FVRFireArm_Fire;
+            On.FistVR.AttachableFirearm.Fire						+= AttachableFirearm_Fire;
 		}
 
-		public void Unhook()
+        public void Unhook()
 		{
-			On.FistVR.FVRFireArmReloadTriggerMag.OnTriggerEnter -= FVRFireArmReloadTriggerMag_OnTriggerEnter;
-			On.FistVR.FVRFireArmClipTriggerClip.OnTriggerEnter -= FVRFireArmClipTriggerClip_OnTriggerEnter;
-			On.FistVR.FVRFireArmRound.FVRFixedUpdate -= FVRFireArmRound_FVRFixedUpdate;
-			On.FistVR.PhysicalMagazineReleaseLatch.OnCollisionStay -= PhysicalMagazineReleaseLatch_OnCollisionStay;
-			On.FistVR.FVRPhysicalObject.ToggleQuickbeltState -= FVRPhysicalObject_ToggleQuickbeltState;
-			On.FistVR.FVRFireArmMagazine.FVRFixedUpdate -= FVRFireArmMagazine_FVRFixedUpdate;
+			On.FistVR.FVRFireArmReloadTriggerMag.OnTriggerEnter		-= FVRFireArmReloadTriggerMag_OnTriggerEnter;
+			On.FistVR.FVRFireArmClipTriggerClip.OnTriggerEnter		-= FVRFireArmClipTriggerClip_OnTriggerEnter;
+			On.FistVR.FVRFireArmRound.FVRFixedUpdate				-= FVRFireArmRound_FVRFixedUpdate;
+			On.FistVR.PhysicalMagazineReleaseLatch.OnCollisionStay	-= PhysicalMagazineReleaseLatch_OnCollisionStay;
+			On.FistVR.FVRPhysicalObject.ToggleQuickbeltState		-= FVRPhysicalObject_ToggleQuickbeltState;
+			On.FistVR.FVRFireArmMagazine.FVRFixedUpdate				-= FVRFireArmMagazine_FVRFixedUpdate;
+			On.FistVR.FVRFireArm.Fire								-= FVRFireArm_Fire;
+			On.FistVR.AttachableFirearm.Fire						-= AttachableFirearm_Fire;
 		}
 
-		// Allow palmed mags to load into firearms
-		private void FVRFireArmReloadTriggerMag_OnTriggerEnter(On.FistVR.FVRFireArmReloadTriggerMag.orig_OnTriggerEnter orig, FVRFireArmReloadTriggerMag self, Collider collider)
+        #endregion Hooks
+
+        #region Patches
+
+        // Allow palmed mags to load into firearms
+        private void FVRFireArmReloadTriggerMag_OnTriggerEnter(On.FistVR.FVRFireArmReloadTriggerMag.orig_OnTriggerEnter orig, FVRFireArmReloadTriggerMag self, Collider collider)
 		{
 			orig(self, collider);
 
@@ -114,24 +124,33 @@ namespace BetterHands.MagPalming
 			return false;
 		}
 
-		private void BuzzAndUpdateControllerDef()
-        {
-			GM.CurrentPlayerBody.LeftHand.GetComponent<FVRViveHand>().UpdateControllerDefinition();
-			GM.CurrentPlayerBody.RightHand.GetComponent<FVRViveHand>().UpdateControllerDefinition();
+		// CursedTriggers
+		private void FVRFireArm_Fire(On.FistVR.FVRFireArm.orig_Fire orig, FVRFireArm self, FVRFireArmChamber chamber, Transform muzzle, bool doBuzz, float velMult, float rangeOverride)
+		{
+			orig(self, chamber, muzzle, doBuzz, velMult, rangeOverride);
+
+			var config = _config.zCheat;
+			if(config.CursedTriggers.Value && config.CursedTriggersDriver.Value == CheatConfig.CursedTriggerDriverOptions.Primary)
+            {
+				foreach (var attachment in self.AttachmentsList)
+				{
+					FireChildren(attachment);
+				}
+			}
 		}
 
-		private void BuzzAndUpdateControllerDef(FVRQuickBeltSlot slot, FVRFireArm fireArm)
+		// CursedTriggers
+		private void AttachableFirearm_Fire(On.FistVR.AttachableFirearm.orig_Fire orig, AttachableFirearm self, FVRFireArmChamber chamber, Transform muzzle, bool doBuzz, FVRFireArm fa, float velMult)
 		{
-			if (fireArm.IsHeld)
+			orig(self, chamber, muzzle, doBuzz, fa, velMult);
+
+			var config = _config.zCheat;
+			if (config.CursedTriggers.Value && config.CursedTriggersDriver.Value == CheatConfig.CursedTriggerDriverOptions.Underbarrel && fa != null)
 			{
-				fireArm.m_hand.OtherHand.Buzz(fireArm.m_hand.Buzzer.Buzz_BeginInteraction);
-				fireArm.m_hand.OtherHand.UpdateControllerDefinition();
-			}
-			else if (fireArm.QuickbeltSlot != null)
-			{
-				var hand = MP.GetHandFromSlot(slot);
-				hand.Buzz(hand.OtherHand.Buzzer.Buzz_BeginInteraction);
-				hand.UpdateControllerDefinition();
+				foreach (var attachment in fa.AttachmentsList)
+				{
+					FireChildren(attachment);
+				}
 			}
 		}
 
@@ -172,12 +191,6 @@ namespace BetterHands.MagPalming
 					}
 				}
 			}
-		}
-
-		private void DestroyRound(FVRFireArmRound round, FVRQuickBeltSlot qbSlot)
-		{
-			Object.Destroy(round.gameObject);
-			MP.GetHandFromSlot(qbSlot).UpdateControllerDefinition();
 		}
 
 		// Allow palmed mags to hit physical mag releases
@@ -231,6 +244,55 @@ namespace BetterHands.MagPalming
 							self.IsNonPhysForLoad = false;
 						}
 					}
+				}
+			}
+		}
+
+        #endregion Patches
+
+        private void BuzzAndUpdateControllerDef()
+		{
+			GM.CurrentPlayerBody.LeftHand.GetComponent<FVRViveHand>().UpdateControllerDefinition();
+			GM.CurrentPlayerBody.RightHand.GetComponent<FVRViveHand>().UpdateControllerDefinition();
+		}
+
+		private void BuzzAndUpdateControllerDef(FVRQuickBeltSlot slot, FVRFireArm fireArm)
+		{
+			if (fireArm.IsHeld)
+			{
+				fireArm.m_hand.OtherHand.Buzz(fireArm.m_hand.Buzzer.Buzz_BeginInteraction);
+				fireArm.m_hand.OtherHand.UpdateControllerDefinition();
+			}
+			else if (fireArm.QuickbeltSlot != null)
+			{
+				var hand = MP.GetHandFromSlot(slot);
+				hand.Buzz(hand.OtherHand.Buzzer.Buzz_BeginInteraction);
+				hand.UpdateControllerDefinition();
+			}
+		}
+
+		private void DestroyRound(FVRFireArmRound round, FVRQuickBeltSlot qbSlot)
+		{
+			Object.Destroy(round.gameObject);
+			MP.GetHandFromSlot(qbSlot).UpdateControllerDefinition();
+		}
+
+		private void FireChildren(FVRFireArmAttachment attachment)
+		{
+			if (attachment is AttachableFirearmPhysicalObject attachableFPO && attachableFPO != null && attachableFPO.FA != null)
+			{
+				var attachableGun = attachableFPO.FA;
+				if (attachableGun is AttachableClosedBoltWeapon cbWeapon)
+				{
+					cbWeapon.Fire(true);
+				}
+				else if (attachableGun is AttachableTubeFed tubeFed)
+				{
+					tubeFed.Fire(true);
+				}
+				else if (attachableGun is AttachableBreakActions breakAction)
+				{
+					breakAction.Fire(true);
 				}
 			}
 		}

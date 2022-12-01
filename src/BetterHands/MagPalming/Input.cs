@@ -19,15 +19,15 @@ namespace BetterHands.MagPalming
 
 		public void Hook()
 		{
-			On.FistVR.FVRViveHand.Update += FVRViveHand_Update;
-			On.FistVR.FVRPhysicalObject.FVRUpdate += FVRPhysicalObject_FVRUpdate;
+			On.FistVR.FVRViveHand.Update						+= FVRViveHand_Update;
+			On.FistVR.FVRPhysicalObject.FVRUpdate				+= FVRPhysicalObject_FVRUpdate;
             On.FistVR.FVRMovementManager.UpdateSmoothLocomotion += FVRMovementManager_UpdateSmoothLocomotion;
 		}
 
         public void Unhook()
 		{
-			On.FistVR.FVRViveHand.Update -= FVRViveHand_Update;
-			On.FistVR.FVRPhysicalObject.FVRUpdate -= FVRPhysicalObject_FVRUpdate;
+			On.FistVR.FVRViveHand.Update						-= FVRViveHand_Update;
+			On.FistVR.FVRPhysicalObject.FVRUpdate				-= FVRPhysicalObject_FVRUpdate;
 			On.FistVR.FVRMovementManager.UpdateSmoothLocomotion -= FVRMovementManager_UpdateSmoothLocomotion;
 		}
 
