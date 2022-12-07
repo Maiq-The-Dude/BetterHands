@@ -15,8 +15,8 @@ namespace BetterHands.MagPalming
 		public void Hook()
 		{
 			// Pose Override
-			On.FistVR.FVRPhysicalObject.GetGrabPos			+= FVRPhysicalObject_GetGrabPos;
-			On.FistVR.FVRPhysicalObject.GetGrabRot			+= FVRPhysicalObject_GetGrabRot;
+			On.FistVR.FVRPhysicalObject.GetGrabPos += FVRPhysicalObject_GetGrabPos;
+			On.FistVR.FVRPhysicalObject.GetGrabRot += FVRPhysicalObject_GetGrabRot;
 
 			// Controller Geo
 			On.FistVR.FVRInteractiveObject.BeginInteraction += FVRInteractiveObject_BeginInteraction;
@@ -25,8 +25,8 @@ namespace BetterHands.MagPalming
 		public void Unhook()
 		{
 			// Pose Override
-			On.FistVR.FVRPhysicalObject.GetGrabPos			-= FVRPhysicalObject_GetGrabPos;
-			On.FistVR.FVRPhysicalObject.GetGrabRot			-= FVRPhysicalObject_GetGrabRot;
+			On.FistVR.FVRPhysicalObject.GetGrabPos -= FVRPhysicalObject_GetGrabPos;
+			On.FistVR.FVRPhysicalObject.GetGrabRot -= FVRPhysicalObject_GetGrabRot;
 
 			// Controller Geo
 			On.FistVR.FVRInteractiveObject.BeginInteraction -= FVRInteractiveObject_BeginInteraction;

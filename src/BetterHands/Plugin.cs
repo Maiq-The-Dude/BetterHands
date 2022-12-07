@@ -1,6 +1,6 @@
 ﻿using BepInEx;
 using BetterHands.Configs;
-using BetterHands.Customization;
+using BetterHands.Customizations;
 using BetterHands.MagPalming;
 using FistVR;
 using Sodalite.Api;
@@ -16,7 +16,7 @@ namespace BetterHands
 	{
 		private readonly RootConfig _config;
 
-		private readonly HandsRecolor _handCustomization;
+		private readonly Customization _customization;
 		private readonly MagPalm _magPalm;
 
 		private IDisposable _leaderboardLock;
@@ -25,13 +25,16 @@ namespace BetterHands
 		{
 			_config = new RootConfig(Config);
 
-			_config.MagPalm.Enable.SettingChanged += MagPalmEnable_SettingChanged;
-			_config.MagPalm.Enable.SettingChanged += Cheat_SettingChanged;
+			_config.MagPalm.aEnable.SettingChanged += MagPalm_SettingChanged;
+			_config.Customization.Hands.aEnable.SettingChanged += Customization_SettingChanged;
+			_config.Customization.QBSlots.aEnable.SettingChanged += Customization_SettingChanged;
+
+			_config.MagPalm.aEnable.SettingChanged += Cheat_SettingChanged;
 			_config.zCheat.CursedPalms.SettingChanged += Cheat_SettingChanged;
 			_config.zCheat.SizeLimit.SettingChanged += Cheat_SettingChanged;
 			_config.zCheat.CursedTriggers.SettingChanged += Cheat_SettingChanged;
 
-			_handCustomization = new HandsRecolor(_config);
+			_customization = new Customization(_config);
 			_magPalm = new MagPalm(_config, Logger);
 
 			On.FistVR.FVRPlayerBody.Init += (orig, self, SceneSettings) =>
@@ -43,12 +46,11 @@ namespace BetterHands
 
 		private void Awake()
 		{
-			_handCustomization.Hook();
+			if (_config.Customization.Hands.aEnable.Value) _customization.HandsHook();
 
-			if (_config.MagPalm.Enable.Value)
-			{
-				_magPalm.Hook();
-			}
+			if (_config.Customization.QBSlots.aEnable.Value) _customization.QBSlotsHook();
+
+			if (_config.MagPalm.aEnable.Value) _magPalm.Hook();
 		}
 
 		private void Start()
@@ -58,14 +60,15 @@ namespace BetterHands
 
 		private void OnDestroy()
 		{
-			_handCustomization.Unhook();
+			_customization.HandsUnhook();
+			_customization.QBSlotsUnhook();
 			_magPalm.Unhook();
 		}
 
 		private void ScoreSubmissionManager()
 		{
 			var cfg = _config.zCheat;
-			if ((_config.MagPalm.Enable.Value && (cfg.CursedPalms.Value || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium)) || cfg.CursedTriggers.Value)
+			if ((_config.MagPalm.aEnable.Value && (cfg.CursedPalms.Value || cfg.SizeLimit.Value > FVRPhysicalObject.FVRPhysicalObjectSize.Medium)) || cfg.CursedTriggers.Value)
 			{
 				Logger.LogDebug("TNH scoring is disabled");
 				_leaderboardLock ??= LeaderboardAPI.LeaderboardDisabled.TakeLock();
@@ -85,16 +88,15 @@ namespace BetterHands
 			ScoreSubmissionManager();
 		}
 
-		private void MagPalmEnable_SettingChanged(object sender, System.EventArgs e)
+		private void MagPalm_SettingChanged(object sender, System.EventArgs e)
 		{
-			if (_config.MagPalm.Enable.Value)
-			{
-				_magPalm.Hook();
-			}
-			else
-			{
-				_magPalm.Unhook();
-			}
+			if (_config.MagPalm.aEnable.Value) _magPalm.Hook(); else _magPalm.Unhook();
+		}
+		private void Customization_SettingChanged(object sender, System.EventArgs e)
+		{
+			if (_config.Customization.Hands.aEnable.Value) _customization.HandsHook(); else _customization.HandsUnhook();
+
+			if (_config.Customization.QBSlots.aEnable.Value) _customization.QBSlotsHook(); else _customization.QBSlotsUnhook();
 		}
 
 		#endregion Hook Events

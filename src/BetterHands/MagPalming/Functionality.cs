@@ -1,7 +1,6 @@
 ﻿using BetterHands.Configs;
 using FistVR;
 using UnityEngine;
-using BepInEx.Logging;
 
 namespace BetterHands.MagPalming
 {
@@ -16,38 +15,36 @@ namespace BetterHands.MagPalming
 			_config = MP.Config;
 		}
 
-        #region Hooks
+		#region Hooks
 
-        public void Hook()
+		public void Hook()
 		{
-			On.FistVR.FVRFireArmReloadTriggerMag.OnTriggerEnter		+= FVRFireArmReloadTriggerMag_OnTriggerEnter;
-			On.FistVR.FVRFireArmClipTriggerClip.OnTriggerEnter		+= FVRFireArmClipTriggerClip_OnTriggerEnter;
-			On.FistVR.FVRFireArmRound.FVRFixedUpdate				+= FVRFireArmRound_FVRFixedUpdate;
-			On.FistVR.PhysicalMagazineReleaseLatch.OnCollisionStay	+= PhysicalMagazineReleaseLatch_OnCollisionStay;
-			On.FistVR.FVRPhysicalObject.ToggleQuickbeltState		+= FVRPhysicalObject_ToggleQuickbeltState;
-			On.FistVR.FVRFireArmMagazine.FVRFixedUpdate				+= FVRFireArmMagazine_FVRFixedUpdate;
-            On.FistVR.FVRFireArm.Fire								+= FVRFireArm_Fire;
-            On.FistVR.AttachableFirearm.Fire						+= AttachableFirearm_Fire;
+			On.FistVR.FVRFireArmReloadTriggerMag.OnTriggerEnter += FVRFireArmReloadTriggerMag_OnTriggerEnter;
+			On.FistVR.FVRFireArmClipTriggerClip.OnTriggerEnter += FVRFireArmClipTriggerClip_OnTriggerEnter;
+			On.FistVR.FVRFireArmRound.FVRFixedUpdate += FVRFireArmRound_FVRFixedUpdate;
+			On.FistVR.PhysicalMagazineReleaseLatch.OnCollisionStay += PhysicalMagazineReleaseLatch_OnCollisionStay;
+			On.FistVR.FVRPhysicalObject.ToggleQuickbeltState += FVRPhysicalObject_ToggleQuickbeltState;
+			On.FistVR.FVRFireArmMagazine.FVRFixedUpdate += FVRFireArmMagazine_FVRFixedUpdate;
+			On.FistVR.FVRFireArm.Fire += FVRFireArm_Fire;
 		}
 
-        public void Unhook()
+		public void Unhook()
 		{
-			On.FistVR.FVRFireArmReloadTriggerMag.OnTriggerEnter		-= FVRFireArmReloadTriggerMag_OnTriggerEnter;
-			On.FistVR.FVRFireArmClipTriggerClip.OnTriggerEnter		-= FVRFireArmClipTriggerClip_OnTriggerEnter;
-			On.FistVR.FVRFireArmRound.FVRFixedUpdate				-= FVRFireArmRound_FVRFixedUpdate;
-			On.FistVR.PhysicalMagazineReleaseLatch.OnCollisionStay	-= PhysicalMagazineReleaseLatch_OnCollisionStay;
-			On.FistVR.FVRPhysicalObject.ToggleQuickbeltState		-= FVRPhysicalObject_ToggleQuickbeltState;
-			On.FistVR.FVRFireArmMagazine.FVRFixedUpdate				-= FVRFireArmMagazine_FVRFixedUpdate;
-			On.FistVR.FVRFireArm.Fire								-= FVRFireArm_Fire;
-			On.FistVR.AttachableFirearm.Fire						-= AttachableFirearm_Fire;
+			On.FistVR.FVRFireArmReloadTriggerMag.OnTriggerEnter -= FVRFireArmReloadTriggerMag_OnTriggerEnter;
+			On.FistVR.FVRFireArmClipTriggerClip.OnTriggerEnter -= FVRFireArmClipTriggerClip_OnTriggerEnter;
+			On.FistVR.FVRFireArmRound.FVRFixedUpdate -= FVRFireArmRound_FVRFixedUpdate;
+			On.FistVR.PhysicalMagazineReleaseLatch.OnCollisionStay -= PhysicalMagazineReleaseLatch_OnCollisionStay;
+			On.FistVR.FVRPhysicalObject.ToggleQuickbeltState -= FVRPhysicalObject_ToggleQuickbeltState;
+			On.FistVR.FVRFireArmMagazine.FVRFixedUpdate -= FVRFireArmMagazine_FVRFixedUpdate;
+			On.FistVR.FVRFireArm.Fire -= FVRFireArm_Fire;
 		}
 
-        #endregion Hooks
+		#endregion Hooks
 
-        #region Patches
+		#region Patches
 
-        // Allow palmed mags to load into firearms
-        private void FVRFireArmReloadTriggerMag_OnTriggerEnter(On.FistVR.FVRFireArmReloadTriggerMag.orig_OnTriggerEnter orig, FVRFireArmReloadTriggerMag self, Collider collider)
+		// Allow palmed mags to load into firearms
+		private void FVRFireArmReloadTriggerMag_OnTriggerEnter(On.FistVR.FVRFireArmReloadTriggerMag.orig_OnTriggerEnter orig, FVRFireArmReloadTriggerMag self, Collider collider)
 		{
 			orig(self, collider);
 
@@ -58,7 +55,7 @@ namespace BetterHands.MagPalming
 				var firearm = triggerWell.FireArm;
 				var afirearm = triggerWell.AFireArm;
 				if (triggerWell.UsesSecondaryMagSlots && firearm != null && triggerWell.FireArm.SecondaryMagazineSlots[triggerWell.SecondaryMagSlotIndex].Magazine == null)
-                {
+				{
 					// Remove mag from qb, load, buzz loading hand, and unhide controller geo
 					mag.SetQuickBeltSlot(null);
 					mag.LoadIntoSecondary(firearm, triggerWell.SecondaryMagSlotIndex);
@@ -71,7 +68,7 @@ namespace BetterHands.MagPalming
 					BuzzAndUpdateControllerDef(mag.QuickbeltSlot, mag.FireArm);
 				}
 				else if (afirearm != null && (mag.MagazineType == triggerWell.TypeOverride || mag.MagazineType == afirearm.MagazineType && (afirearm.EjectDelay <= 0f || mag != afirearm.LastEjectedMag) && afirearm.Magazine == null))
-                {
+				{
 					mag.SetQuickBeltSlot(null);
 					mag.Load(afirearm);
 					BuzzAndUpdateControllerDef();
@@ -130,24 +127,9 @@ namespace BetterHands.MagPalming
 			orig(self, chamber, muzzle, doBuzz, velMult, rangeOverride);
 
 			var config = _config.zCheat;
-			if(config.CursedTriggers.Value && config.CursedTriggersDriver.Value == CheatConfig.CursedTriggerDriverOptions.Primary)
-            {
-				foreach (var attachment in self.AttachmentsList)
-				{
-					FireChildren(attachment);
-				}
-			}
-		}
-
-		// CursedTriggers
-		private void AttachableFirearm_Fire(On.FistVR.AttachableFirearm.orig_Fire orig, AttachableFirearm self, FVRFireArmChamber chamber, Transform muzzle, bool doBuzz, FVRFireArm fa, float velMult)
-		{
-			orig(self, chamber, muzzle, doBuzz, fa, velMult);
-
-			var config = _config.zCheat;
-			if (config.CursedTriggers.Value && config.CursedTriggersDriver.Value == CheatConfig.CursedTriggerDriverOptions.Underbarrel && fa != null)
+			if (config.CursedTriggers.Value)
 			{
-				foreach (var attachment in fa.AttachmentsList)
+				foreach (var attachment in self.AttachmentsList)
 				{
 					FireChildren(attachment);
 				}
@@ -248,9 +230,9 @@ namespace BetterHands.MagPalming
 			}
 		}
 
-        #endregion Patches
+		#endregion Patches
 
-        private void BuzzAndUpdateControllerDef()
+		private void BuzzAndUpdateControllerDef()
 		{
 			GM.CurrentPlayerBody.LeftHand.GetComponent<FVRViveHand>().UpdateControllerDefinition();
 			GM.CurrentPlayerBody.RightHand.GetComponent<FVRViveHand>().UpdateControllerDefinition();
@@ -279,7 +261,7 @@ namespace BetterHands.MagPalming
 
 		private void FireChildren(FVRFireArmAttachment attachment)
 		{
-			if (attachment is AttachableFirearmPhysicalObject attachableFPO && attachableFPO != null && attachableFPO.FA != null)
+			if (attachment is AttachableFirearmPhysicalObject attachableFPO && attachableFPO?.FA != null)
 			{
 				var attachableGun = attachableFPO.FA;
 				if (attachableGun is AttachableClosedBoltWeapon cbWeapon)
