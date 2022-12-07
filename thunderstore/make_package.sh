@@ -13,7 +13,7 @@ mkdir -p TEMP/
 cp manifest.json TEMP/manifest.json
 cp icon.png TEMP/icon.png
 cp ../README.md TEMP/README.md
-cp ../src/BetterHands/bin/x64/Release/net35/BetterHands.dll TEMP/BetterHands.dll
+cp ../src/BetterHands/bin/Release/net35/BetterHands.dll TEMP/BetterHands.dll
 
 # Modify the version number
 sed -i "s/{VERSION}/$VERSION/g" TEMP/manifest.json
